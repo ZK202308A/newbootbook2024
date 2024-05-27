@@ -1,0 +1,3590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<style>
+.main {
+    display: none;
+}
+.show {
+    display: block;
+}
+
+.title {
+    font-weight: bold;
+    font-size: 16px;
+    background-color: honeydew;
+}
+
+.file {
+    margin: 0.1em;
+    padding: 0.1em;
+    font-weight: bold;
+    background-color: lightcoral;
+}
+</style>
+
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex3/Ex3ApplicationTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3;
+002: 
+003: import org.junit.jupiter.api.Test;
+004: import org.springframework.boot.test.context.SpringBootTest;
+005: 
+006: @SpringBootTest
+007: class Ex3ApplicationTests {
+008: 
+009:   @Test
+010:   void contextLoads() {
+011:   }
+012: 
+013: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex3/member/repository/MemberRepositoryTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.repository;
+002: 
+003: 
+004: import org.junit.jupiter.api.Test;
+005: import org.springframework.beans.factory.annotation.Autowired;
+006: import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+007: import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+008: import org.springframework.boot.test.context.SpringBootTest;
+009: import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+010: import org.springframework.security.crypto.password.PasswordEncoder;
+011: import org.springframework.test.annotation.Commit;
+012: import org.springframework.transaction.annotation.Propagation;
+013: import org.springframework.transaction.annotation.Transactional;
+014: import org.zerock.ex3.member.entity.MemberEntity;
+015: import org.zerock.ex3.member.exception.MemberExceptions;
+016: 
+017: 
+018: import java.util.Optional;
+019: 
+020: @SpringBootTest
+021: 
+022: public class MemberRepositoryTests {
+023: 
+024:   @Autowired
+025:   private MemberRepository memberRepository;
+026: 
+027:   @Autowired
+028:   private PasswordEncoder passwordEncoder;
+029: 
+030: 
+031:   @Test
+032:   public void testInsert() {
+033: 
+034:     for (int i = 1; i <=  100; i++) {
+035: 
+036:       MemberEntity memberEntity = MemberEntity.builder()
+037:               .mid("user"+i)
+038:               .mpw(passwordEncoder.encode("1111"))
+039:               .mname("USER"+i)
+040:               .email("user"+i+"@aaa.com")
+041:               .role( i <= 80 ? "USER": "ADMIN")
+042:               .build();
+043: 
+044: 
+045:       memberRepository.save(memberEntity);
+046: 
+047:     }//end for
+048: 
+049:   }
+050: 
+051:   @Test
+052:   public void testRead() {
+053: 
+054:     String mid = "user1";
+055: 
+056:     Optional<MemberEntity> result = memberRepository.findById(mid);
+057: 
+058:     MemberEntity memberEntity =
+059:             result.orElseThrow(MemberExceptions.NOT_FOUND::get);
+060: 
+061:     System.out.println(memberEntity);
+062:   }
+063: 
+064:   @Test
+065:   @Transactional
+066:   @Commit
+067:   public void testUpdate() {
+068:     String mid = "user1";
+069: 
+070:     Optional<MemberEntity> result = memberRepository.findById(mid);
+071: 
+072:     MemberEntity memberEntity =
+073:             result.orElseThrow(MemberExceptions.NOT_FOUND::get);
+074: 
+075:     memberEntity.changePassword(passwordEncoder.encode("2222"));
+076:     memberEntity.changeName("USER1-1");
+077: 
+078:   }
+079: 
+080:   @Test
+081:   @Transactional
+082:   @Commit
+083:   public void testDelete() {
+084: 
+085:     String mid = "user1";
+086: 
+087:     Optional<MemberEntity> result = memberRepository.findById(mid);
+088: 
+089:     MemberEntity memberEntity =
+090:             result.orElseThrow(() -> MemberExceptions.NOT_FOUND.get());
+091: 
+092:     memberRepository.delete(memberEntity);
+093:   }
+094: 
+095: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex3/product/repository/ProductRepositoryTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.repository;
+002: 
+003: import org.junit.jupiter.api.Test;
+004: import org.springframework.beans.factory.annotation.Autowired;
+005: import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+006: import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+007: import org.springframework.data.domain.Page;
+008: import org.springframework.data.domain.PageRequest;
+009: import org.springframework.data.domain.Pageable;
+010: import org.springframework.data.domain.Sort;
+011: import org.springframework.test.annotation.Commit;
+012: import org.springframework.transaction.annotation.Propagation;
+013: import org.springframework.transaction.annotation.Transactional;
+014: import org.zerock.ex3.product.dto.ProductDTO;
+015: import org.zerock.ex3.product.dto.ProductListDTO;
+016: import org.zerock.ex3.product.entity.ProductEntity;
+017: 
+018: import java.util.Optional;
+019: 
+020: @DataJpaTest
+021: @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+022: @Transactional(propagation = Propagation.NOT_SUPPORTED)
+023: public class ProductRepositoryTests {
+024: 
+025:   @Autowired
+026:   private ProductRepository productRepoistory;
+027: 
+028:   @Test
+029:   @Transactional
+030:   @Commit
+031:   public void testInsert() {
+032: 
+033:     for (int i = 1; i <= 50; i++) {
+034: 
+035:       ProductEntity productEntity = ProductEntity.builder()
+036:               .pname(i + "_새로운 상품")
+037:               .price(5000)
+038:               .content(i + "_상품 설명")
+039:               .writer("user00")
+040:               .build();
+041: 
+042:       productEntity.addImage(i + "_test1.jpg");
+043:       productEntity.addImage(i + "_test2.jpg");
+044: 
+045:       productRepoistory.save(productEntity);
+046: 
+047:       System.out.println("New Product no: " + productEntity.getPno());
+048: 
+049:     }
+050: 
+051:   }
+052: 
+053:   @Test
+054:   @Transactional(readOnly = true)
+055:   public void testRead() {
+056: 
+057:     Long pno = 1L;
+058: 
+059:     Optional<ProductEntity> result = productRepoistory.findById(pno);
+060: 
+061:     ProductEntity productEntity = result.get();
+062: 
+063:     System.out.println(productEntity);
+064: 
+065:     System.out.println("--------------------------------");
+066: 
+067:     System.out.println(productEntity.getImages());
+068: 
+069:   }
+070: 
+071:   @Test
+072:   @Transactional(readOnly = true)
+073:   public void testReadQuery() {
+074: 
+075:     Long pno = 1L;
+076: 
+077:     Optional<ProductEntity> result = productRepoistory.getProduct(pno);
+078: 
+079:     ProductEntity productEntity = result.get();
+080: 
+081:     System.out.println(productEntity);
+082: 
+083:     System.out.println("--------------------------------");
+084: 
+085:     System.out.println(productEntity.getImages());
+086: 
+087:   }
+088: 
+089:   @Test
+090:   @Transactional
+091:   @Commit
+092:   public void testUpdate() {
+093: 
+094: 
+095:     Optional<ProductEntity> result = productRepoistory.getProduct(1L);
+096: 
+097:     ProductEntity productEntity = result.get();
+098: 
+099:     productEntity.changeTitle("변경된 상품");
+100: 
+101:     productEntity.changePrice(10000);
+102: 
+103:     productEntity.addImage("new1.jpg");
+104: 
+105:     productEntity.addImage("new2.jpg");
+106: 
+107:     //변경 감지시에는 필요없음
+108:     //productRepoistory.save(productEntity);
+109:   }
+110: 
+111:   @Test
+112:   @Transactional
+113:   @Commit
+114:   public void testDelete() {
+115: 
+116:     productRepoistory.deleteById(1L);
+117: 
+118:   }
+119: 
+120: 
+121:   @Test
+122:   public void testReadDTO() {
+123: 
+124:     //반드시 DB에 있는 번호로
+125:     Long pno = 10L;
+126: 
+127:     Optional<ProductDTO> result = productRepoistory.getProductDTO(pno);
+128: 
+129:     ProductDTO productDTO = result.get();
+130: 
+131:     System.out.println(productDTO);
+132: 
+133:   }
+134: 
+135:   @Test
+136:   public void testList() {
+137: 
+138:     org.springframework.data.domain.Pageable pageable
+139:             = PageRequest.of(0, 10, Sort.by("pno").descending());
+140: 
+141:     Page<ProductListDTO> result = productRepoistory.list(pageable);
+142: 
+143:     result.getContent().forEach(productListDTO -> {
+144:       System.out.println(productListDTO);
+145:     });
+146: 
+147:   }
+148: 
+149:   @Transactional
+150:   @Test
+151:   public void testListWithAllImages() {
+152: 
+153:     Pageable pageable = PageRequest.of(0, 10, Sort.by("pno").descending());
+154: 
+155:     Page<ProductDTO> result = productRepoistory.listWithAllImages(pageable);
+156: 
+157:     result.getContent().forEach(productDTO -> {
+158:       System.out.println(productDTO);
+159:     });
+160: 
+161:   }
+162: 
+163:   //@Transactional(readOnly = true)
+164: //  @Test
+165: //  public void testListFetchAllImages() {
+166: //
+167: //    Pageable pageable = PageRequest.of(0, 10, Sort.by("pno").descending());
+168: //
+169: //    Page<ProductDTO> result = productRepoistory.listFetchAllImages(pageable);
+170: //
+171: //  }
+172: 
+173:   //@Transactional(readOnly = true)
+174:   @Test
+175:   public void testListFetchAllImages() {
+176: 
+177:     Pageable pageable = PageRequest.of(0, 10, Sort.by("pno").descending());
+178: 
+179:     Page<ProductDTO> result = productRepoistory.listFetchAllImages(pageable);
+180: 
+181:     for (ProductDTO productDTO : result.getContent()) {
+182:       System.out.println(productDTO);
+183:     }
+184: 
+185:   }
+186: 
+187:   @Test
+188:   public void testListWithReviewCount() {
+189: 
+190:     Pageable pageable = PageRequest.of(0, 10, Sort.by("pno").descending());
+191: 
+192:     Page<ProductListDTO> result = productRepoistory.listWithReviewCount(pageable);
+193: 
+194:     result.getContent().forEach(productListDTO -> {
+195:       System.out.println(productListDTO);
+196:     });
+197:   }
+198: 
+199:   @Transactional
+200:   @Test
+201:   public void testListWithAllImagesReviewCount() {
+202: 
+203:     Pageable pageable = PageRequest.of(0, 10, Sort.by("pno").descending());
+204: 
+205:     Page<ProductDTO> result = productRepoistory.listWithAllImagesReviewCount(pageable);
+206: 
+207:     result.getContent().forEach(productDTO -> {
+208:       System.out.println(productDTO);
+209:     });
+210: 
+211:   }
+212: 
+213: 
+214: 
+215: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex3/review/repository/ReviewRepositoryTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.review.repository;
+002: 
+003: 
+004: import org.junit.jupiter.api.Test;
+005: import org.springframework.beans.factory.annotation.Autowired;
+006: import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+007: import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+008: import org.springframework.data.domain.PageRequest;
+009: import org.springframework.data.domain.Pageable;
+010: import org.springframework.data.domain.Sort;
+011: import org.springframework.test.annotation.Commit;
+012: import org.springframework.transaction.annotation.Propagation;
+013: import org.springframework.transaction.annotation.Transactional;
+014: import org.zerock.ex3.product.entity.ProductEntity;
+015: import org.zerock.ex3.review.entity.ReviewEntity;
+016: import org.zerock.ex3.review.exception.ReviewExceptions;
+017: 
+018: @DataJpaTest
+019: @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+020: @Transactional(propagation = Propagation.NOT_SUPPORTED)
+021: public class ReviewRepositoryTests {
+022: 
+023:   @Autowired
+024:   private ReviewRepository reviewRepository;
+025: 
+026: 
+027:   @Test
+028:   public void testInsert() {
+029: 
+030:     Long pno = 51L;
+031: 
+032:     ProductEntity productEntity =
+033:             ProductEntity.builder().pno(pno).build();
+034: 
+035:       ReviewEntity reviewEntity = ReviewEntity.builder()
+036:               .reviewText("리뷰 내용....")
+037:               .score(5)
+038:               .reviewer("reviewer1")
+039:               .productEntity(productEntity)
+040:               .build();
+041: 
+042:       reviewRepository.save(reviewEntity);
+043:   }
+044: 
+045:   @Transactional
+046:   @Test
+047:   public void testRead() {
+048: 
+049:     Long rno = 5L; //DB에 있는 리뷰 번호
+050: 
+051:     reviewRepository.findById(rno).ifPresent(reviewEntity -> {
+052:       System.out.println(reviewEntity);
+053:       System.out.println(reviewEntity.getProductEntity());
+054:     });
+055:   }
+056: 
+057: //  @Test
+058: //  public void testGetWithProduct() {
+059: //
+060: //    Long rno = 5L;
+061: //
+062: //    reviewRepository.getWithProduct(rno).ifPresent(reviewEntity -> {
+063: //      System.out.println(reviewEntity);
+064: //      System.out.println(reviewEntity.getProductEntity());
+065: //    });
+066: //  }
+067: 
+068: 
+069:   @Test
+070:   public void testGetWithProduct() {
+071: 
+072:     Long rno = 5L;
+073: 
+074:     reviewRepository.getWithProduct(rno).ifPresent(reviewEntity -> {
+075:       System.out.println(reviewEntity);
+076:       System.out.println(reviewEntity.getProductEntity());
+077:       System.out.println(reviewEntity.getProductEntity().getImages());
+078:     });
+079:   }
+080: 
+081:   @Transactional
+082:   @Test
+083:   @Commit
+084:   public void testRemove() {
+085: 
+086:     Long rno = 1L;
+087: 
+088:     reviewRepository.deleteById(rno);
+089:   }
+090: 
+091:   @Transactional
+092:   @Test
+093:   @Commit
+094:   public void testRemove2() {
+095: 
+096:     ReviewEntity reviewEntity =
+097:             reviewRepository.findById(1L).orElseThrow(ReviewExceptions.REVIEW_NOT_FOUND::get);
+098: 
+099:     reviewRepository.delete(reviewEntity);
+100:   }
+101: 
+102: 
+103:   @Transactional
+104:   @Test
+105:   @Commit
+106:   public void testUpdate() {
+107: 
+108:     Long rno = 2L;
+109: 
+110:     ReviewEntity reviewEntity =
+111:             reviewRepository.findById(rno).orElseThrow(ReviewExceptions.REVIEW_NOT_FOUND::get);
+112: 
+113:     reviewEntity.changeReviewText("변경된 리뷰 내용");
+114:     reviewEntity.changeScore(3);
+115:   }
+116: 
+117: 
+118:   @Test
+119:   public void testList() {
+120: 
+121:     Long pno = 51L;
+122: 
+123:     Pageable pageable = PageRequest.of(0,10, Sort.by("rno").descending());
+124: 
+125:     reviewRepository.getListByPno(pno, pageable).getContent().forEach(reviewDTO -> {
+126:       System.out.println(reviewDTO);
+127:     });
+128:   }
+129: 
+130: 
+131: 
+132: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex3/review/service/ReviewServiceTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.review.service;
+002: 
+003: 
+004: import org.junit.jupiter.api.Test;
+005: import org.springframework.beans.factory.annotation.Autowired;
+006: import org.springframework.boot.test.context.SpringBootTest;
+007: import org.zerock.ex3.review.dto.ReviewDTO;
+008: 
+009: @SpringBootTest
+010: 
+011: public class ReviewServiceTests {
+012: 
+013:   @Autowired
+014:   private ReviewService reviewService;
+015: 
+016:   @Test
+017:   public void testRegister() {
+018: 
+019:     Long pno = 100L;
+020: 
+021:     ReviewDTO reviewDTO = ReviewDTO.builder()
+022:             .reviewText("리뷰 내용")
+023:             .score(5)
+024:             .reviewer("reviewer1")
+025:             .pno(pno)
+026:             .build();
+027: 
+028:     reviewService.register(reviewDTO);
+029: 
+030:   }
+031: 
+032: 
+033:   @Test
+034:   public void testRead() {
+035: 
+036:     Long rno = 1L;
+037:     ReviewDTO reviewDTO = reviewService.read(rno);
+038:     System.out.println(reviewDTO);
+039:   }
+040: 
+041: 
+042: 
+043: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex3/cart/repository/CartRepositoryTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.repository;
+002: 
+003: import org.junit.jupiter.api.Test;
+004: import org.springframework.beans.factory.annotation.Autowired;
+005: import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+006: import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+007: import org.springframework.test.annotation.Commit;
+008: import org.springframework.transaction.annotation.Propagation;
+009: import org.springframework.transaction.annotation.Transactional;
+010: import org.zerock.ex3.cart.entity.CartEntity;
+011: import org.zerock.ex3.cart.entity.CartItemEntity;
+012: import org.zerock.ex3.product.entity.ProductEntity;
+013: 
+014: import java.util.List;
+015: import java.util.Optional;
+016: 
+017: @DataJpaTest
+018: @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+019: @Transactional(propagation = Propagation.NOT_SUPPORTED)
+020: 
+021: public class CartRepositoryTests {
+022: 
+023:   @Autowired
+024:   private CartRepository cartRepository;
+025: 
+026:   @Autowired
+027:   private CartItemRepository cartItemRepository;
+028: 
+029:   @Transactional
+030:   @Test
+031:   @Commit
+032:   public void testInsertCart() {
+033: 
+034:     String mid = "user22";
+035:     Long pno = 48L;
+036:     int qty = 3;
+037: 
+038:     Optional<CartEntity> cartResult = cartRepository.findByHolder(mid);
+039: 
+040:     CartEntity cartEntity = cartResult.orElseGet(() -> {
+041: 
+042:       CartEntity cart = CartEntity.builder().holder(mid).build();
+043: 
+044:       return cartRepository.save(cart);
+045:     });
+046: 
+047:     ProductEntity productEntity = ProductEntity.builder().pno(pno).build();
+048: 
+049:     CartItemEntity cartItemEntity = CartItemEntity.builder()
+050:             .cart(cartEntity)
+051:             .product(productEntity)
+052:             .quantity(qty)
+053:             .build();
+054: 
+055:     cartItemRepository.save(cartItemEntity);
+056:   }
+057: 
+058:   @Test
+059:   public void testRead() {
+060: 
+061:     String mid = "user22";
+062: 
+063:     Optional<List<CartItemEntity>> result = cartItemRepository.getCartItemsOfHolder(mid);
+064: 
+065:     List<CartItemEntity> cartItemEntityList = result.orElse(null);
+066: 
+067:     cartItemEntityList.forEach(cartItemEntity -> {
+068:       System.out.println(cartItemEntity);
+069:       System.out.println(cartItemEntity.getProduct());
+070:       System.out.println(cartItemEntity.getProduct().getImages());
+071:       System.out.println("--------------------------------");
+072:     });
+073: 
+074:   }
+075: 
+076:   @Test
+077:   public void testRead2() {
+078: 
+079:     String mid = "user22";
+080: 
+081:     List<Object[]> result = cartItemRepository.getCartItemsOfHolder2(mid);
+082: 
+083:     result.forEach(arr -> {
+084:       System.out.println(arr[0]);
+085:       System.out.println(arr[1]);
+086:       System.out.println(arr[2]);
+087:       System.out.println("--------------------------------");
+088:     });
+089:   }
+090: 
+091:   @Test
+092:   @Transactional
+093:   @Commit
+094:   public void testModifyCartItem(){
+095: 
+096:     Long itemNo = 3L;
+097:     int qty = 0;
+098: 
+099:     Optional<CartItemEntity> result = cartItemRepository.findById(itemNo);
+100: 
+101:     CartItemEntity cartItemEntity = result.get();
+102: 
+103:     cartItemEntity.changeQuantity(qty);
+104: 
+105:     if(cartItemEntity.getQuantity() <= 0){
+106:       cartItemRepository.delete(cartItemEntity);
+107:     }
+108: 
+109:   }
+110: 
+111: 
+112: 
+113: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex3/cart/service/CartServiceTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.service;
+002: 
+003: 
+004: import org.junit.jupiter.api.Test;
+005: import org.springframework.beans.factory.annotation.Autowired;
+006: import org.springframework.boot.test.context.SpringBootTest;
+007: import org.zerock.ex3.cart.dto.AddCartItemDTO;
+008: import org.zerock.ex3.cart.dto.CartItemDTO;
+009: import org.zerock.ex3.cart.dto.ModifyCartItemDTO;
+010: 
+011: import java.util.List;
+012: 
+013: @SpringBootTest
+014: public class CartServiceTests {
+015: 
+016:   @Autowired
+017:   private CartService cartService;
+018: 
+019:   @Test
+020:   public void testGetCartList() {
+021: 
+022:     String mid = "user22";
+023: 
+024:     List<CartItemDTO> cartList = cartService.getAllItems(mid);
+025: 
+026:     cartList.forEach(cartItemDTO -> {
+027:       System.out.println(cartItemDTO);
+028:     });
+029:   }
+030: 
+031:   @Test
+032:   public void testRegisterItem() {
+033: 
+034:     String mid = "user55";
+035:     Long pno = 40L;
+036:     int qty = 2;
+037: 
+038:     AddCartItemDTO addCartItemDTO = AddCartItemDTO.builder()
+039:             .holder(mid)
+040:             .pno(pno)
+041:             .quantity(qty)
+042:             .build();
+043: 
+044:     cartService.registerItem(addCartItemDTO);
+045:   }
+046: 
+047:   @Test
+048:   public void testModifyItem() {
+049: 
+050:     Long itemNo = 2L;
+051:     int qty = 1;
+052: 
+053:     ModifyCartItemDTO modifyCartItemDTO = ModifyCartItemDTO.builder()
+054:             .itemNo(itemNo)
+055:             .quantity(qty)
+056:             .build();
+057: 
+058:     cartService.modifyItem(modifyCartItemDTO);
+059:   }
+060: 
+061: 
+062: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/config/CustomSecurityConfig.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.config;
+002: 
+003: 
+004: import lombok.extern.log4j.Log4j2;
+005: import org.springframework.beans.factory.annotation.Autowired;
+006: import org.springframework.context.annotation.Bean;
+007: import org.springframework.context.annotation.Configuration;
+008: import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+009: import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+010: import org.springframework.security.config.http.SessionCreationPolicy;
+011: import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+012: import org.springframework.security.crypto.password.PasswordEncoder;
+013: import org.springframework.security.web.SecurityFilterChain;
+014: import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+015: import org.springframework.web.cors.CorsConfiguration;
+016: import org.springframework.web.cors.CorsConfigurationSource;
+017: import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+018: import org.zerock.ex3.member.security.filter.JWTCheckFilter;
+019: 
+020: import java.util.List;
+021: 
+022: @Configuration
+023: @Log4j2
+024: @EnableMethodSecurity
+025: public class CustomSecurityConfig {
+026: 
+027: 
+028:   private JWTCheckFilter jwtCheckFilter;
+029: 
+030:   @Autowired
+031:   private void setJwtCheckFilter(JWTCheckFilter jwtCheckFilter) {
+032:     this.jwtCheckFilter = jwtCheckFilter;
+033:   }
+034: 
+035: 
+036:   @Bean
+037:   public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+038: 
+039:     log.info("filter chain............");
+040: 
+041:     httpSecurity.formLogin(httpSecurityFormLoginConfigurer -> {
+042:       httpSecurityFormLoginConfigurer.disable();
+043: 
+044:     });
+045: 
+046:     httpSecurity.logout( config -> config.disable());
+047: 
+048:     httpSecurity.csrf(config -> { config.disable();});
+049: 
+050:     httpSecurity.sessionManagement(sessionManagementConfigurer -> {
+051:       sessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.NEVER);
+052:     });
+053: 
+054:     httpSecurity.addFilterBefore(jwtCheckFilter, UsernamePasswordAuthenticationFilter.class);
+055: 
+056:     httpSecurity.cors(cors -> {
+057:       cors.configurationSource(corsConfigurationSource());
+058:     });
+059: 
+060:     return httpSecurity.build();
+061:   }
+062: 
+063:   @Bean
+064:   public PasswordEncoder passwordEncoder() {
+065:     return new BCryptPasswordEncoder();
+066:   }
+067: 
+068:   @Bean
+069:   public CorsConfigurationSource corsConfigurationSource() {
+070: 
+071:     CorsConfiguration corsConfiguration = new CorsConfiguration();
+072: 
+073:     corsConfiguration.setAllowedOriginPatterns(List.of("*")); // 어디서든 허락
+074:     corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"));
+075:     corsConfiguration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
+076:     corsConfiguration.setAllowCredentials(true);
+077: 
+078:     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+079:     source.registerCorsConfiguration("/**", corsConfiguration);
+080: 
+081:     return source;
+082:   }
+083: 
+084: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/dto/MemberDTO.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.dto;
+002: 
+003: 
+004: import lombok.*;
+005: import org.zerock.ex3.member.entity.MemberEntity;
+006: 
+007: import java.time.LocalDateTime;
+008: import java.util.HashMap;
+009: import java.util.Map;
+010: 
+011: 
+012: @Data
+013: @Builder
+014: @AllArgsConstructor
+015: @NoArgsConstructor
+016: @ToString
+017: public class MemberDTO  {
+018: 
+019:   private String mid;
+020:   private String mpw;
+021:   private String mname;
+022:   private String email;
+023:   private LocalDateTime joinDate;
+024:   private LocalDateTime modifiedDate;
+025:   private String role;
+026: 
+027: 
+028:   public Map<String, Object> getDataMap() {
+029:     Map<String, Object> map = new HashMap<>();
+030:     map.put("mid", mid);
+031:     map.put("mname", mname);
+032:     map.put("email", email);
+033:     map.put("role", role);
+034:     return map;
+035:   }
+036: 
+037:   public MemberDTO(MemberEntity memberEntity){
+038:     this.mid = memberEntity.getMid();
+039:     this.mpw = memberEntity.getMpw();
+040:     this.mname = memberEntity.getMname();
+041:     this.email = memberEntity.getEmail();
+042:     this.joinDate = memberEntity.getJoinDate();
+043:     this.modifiedDate = memberEntity.getModifiedDate();
+044:     this.role = memberEntity.getRole();
+045:   }
+046: 
+047: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/repository/MemberRepository.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.repository;
+002: 
+003: import org.springframework.data.jpa.repository.JpaRepository;
+004: import org.zerock.ex3.member.entity.MemberEntity;
+005: 
+006: public interface MemberRepository extends JpaRepository<MemberEntity, String> {
+007: 
+008: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/security/util/JWTUtil.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.security.util;
+002: 
+003: import io.jsonwebtoken.*;
+004: import io.jsonwebtoken.security.Keys;
+005: import lombok.extern.log4j.Log4j2;
+006: import org.springframework.stereotype.Component;
+007: 
+008: import javax.crypto.SecretKey;
+009: import java.time.ZonedDateTime;
+010: import java.util.Date;
+011: import java.util.Map;
+012: 
+013: @Component
+014: @Log4j2
+015: public class JWTUtil {
+016:   private static String key = "1234567890123456789012345678901234567890";
+017: 
+018:   public String createToken(Map<String, Object> valueMap, int min) {
+019: 
+020:     SecretKey key = null;
+021: 
+022:     try {
+023:       key = Keys.hmacShaKeyFor(JWTUtil.key.getBytes("UTF-8"));
+024: 
+025:     } catch (Exception e) {
+026:       throw new RuntimeException(e.getMessage());
+027:     }
+028: 
+029:     return Jwts.builder().header()
+030:             .add("typ", "JWT")
+031:             .add("alg", "HS256")
+032:             .and()
+033:             .issuedAt(Date.from(ZonedDateTime.now().toInstant()))
+034:             .expiration((Date.from(ZonedDateTime.now()
+035:                     .plusMinutes(min).toInstant()))).claims(valueMap)
+036:             .signWith(key)
+037:             .compact();
+038: 
+039:   }
+040: 
+041:   public Map<String, Object> validateToken(String token) {
+042: 
+043:     SecretKey key = null;
+044: 
+045:     try {
+046:       key = Keys.hmacShaKeyFor(JWTUtil.key.getBytes("UTF-8"));
+047: 
+048:     } catch (Exception e) {
+049:       throw new RuntimeException(e.getMessage());
+050:     }
+051: 
+052:     Claims claims = Jwts.parser().verifyWith(key)
+053:             .build()
+054:             .parseSignedClaims(token)
+055:             .getPayload();
+056: 
+057:     log.info("claims: " + claims);
+058: 
+059:     return claims;
+060: 
+061:   }
+062: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/security/auth/CustomUserPrincipal.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.security.auth;
+002: 
+003: import lombok.RequiredArgsConstructor;
+004: 
+005: import java.security.Principal;
+006: 
+007: 
+008: @RequiredArgsConstructor
+009: public class CustomUserPrincipal implements Principal {
+010: 
+011:   private final String mid;
+012: 
+013:   @Override
+014:   public String getName() {
+015:     return mid;
+016:   }
+017: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/security/filter/JWTCheckFilter.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.security.filter;
+002: 
+003: 
+004: import jakarta.servlet.FilterChain;
+005: import jakarta.servlet.ServletException;
+006: import jakarta.servlet.http.HttpServletRequest;
+007: import jakarta.servlet.http.HttpServletResponse;
+008: import lombok.RequiredArgsConstructor;
+009: import lombok.extern.log4j.Log4j2;
+010: import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+011: import org.springframework.security.core.authority.SimpleGrantedAuthority;
+012: import org.springframework.security.core.context.SecurityContext;
+013: import org.springframework.security.core.context.SecurityContextHolder;
+014: import org.springframework.stereotype.Component;
+015: import org.springframework.web.filter.OncePerRequestFilter;
+016: import org.zerock.ex3.member.security.auth.CustomUserPrincipal;
+017: import org.zerock.ex3.member.security.util.JWTUtil;
+018: 
+019: 
+020: import java.io.IOException;
+021: import java.util.Arrays;
+022: import java.util.stream.Collectors;
+023: 
+024: 
+025: @Component
+026: @RequiredArgsConstructor
+027: @Log4j2
+028: public class JWTCheckFilter extends OncePerRequestFilter {
+029: 
+030:   private final JWTUtil jwtUtil;
+031: 
+032: 
+033:   @Override
+034:   protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+035: 
+036: 
+037:     if(request.getServletPath().startsWith("/api/v1/token/")) {
+038:       return true;
+039:     }
+040: 
+041:     String path = request.getRequestURI();
+042: 
+043:     if( !path.startsWith("/api/") ){
+044:       return true;
+045:     }
+046: 
+047: 
+048:     //경로 지정 필요
+049:     return false;
+050:   }
+051: 
+052: 
+053:   @Override
+054:   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+055: 
+056:     log.info("JWTCheckFilter doFilter............ ");
+057: 
+058:     log.info("requestURI: " + request.getRequestURI());
+059: 
+060:     String headerStr = request.getHeader("Authorization");
+061: 
+062:     log.info("headerStr: " + headerStr);
+063: 
+064:     //Access Token이 없는 경우
+065:     if (headerStr == null || !headerStr.startsWith("Bearer ")) {
+066:       handleException(response, new Exception("ACCESSS TOKEN NOT FOUND"));
+067:       return;
+068:     }
+069: 
+070:     String accessToken = headerStr.substring(7);
+071: 
+072:     try {
+073:       java.util.Map<String, Object> tokenMap = jwtUtil.validateToken(accessToken);
+074: 
+075:       //토큰 검증 결과에 문제가 없었다
+076:       log.info("tokenMap: " + tokenMap);
+077: 
+078:       String mid = tokenMap.get("mid").toString();
+079: 
+080:       //권한이 여러 개인 경우에는 ,로 구분해서 처리
+081:       String[] roles = tokenMap.get("role").toString().split(",");
+082: 
+083:       //토큰 검증 결과를 이용해서 Authentication 객체를 생성
+084:       UsernamePasswordAuthenticationToken authenticationToken =
+085:               new UsernamePasswordAuthenticationToken(
+086:                       new CustomUserPrincipal(mid),
+087:                       null,
+088:                       Arrays.stream(roles)
+089:                               .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+090:                               .collect(Collectors.toList())
+091:               );
+092: 
+093:       //SecurityContextHolder에 Authentication 객체를 저장
+094:       //이후에 SecurityContextHolder를 이용해서 Authentication 객체를 꺼내서 사용할 수 있다.
+095:       SecurityContext context = SecurityContextHolder.getContext();
+096:       context.setAuthentication(authenticationToken);
+097: 
+098:       filterChain.doFilter(request, response);
+099: 
+100:     } catch (Exception e) {
+101:       //문제가 발생했다면
+102:       handleException(response, e);
+103: 
+104:     }
+105: 
+106: 
+107: 
+108:   }
+109: 
+110: 
+111:   private void handleException(HttpServletResponse response, Exception e) throws IOException {
+112:     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+113:     response.setContentType("application/json");
+114:     response.getWriter().println("{\"error\": \"" + e.getMessage() + "\"}");
+115:   }
+116: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/entity/MemberEntity.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.entity;
+002: 
+003: 
+004: import jakarta.persistence.Entity;
+005: import jakarta.persistence.EntityListeners;
+006: import jakarta.persistence.Id;
+007: import jakarta.persistence.Table;
+008: import lombok.*;
+009: import org.springframework.data.annotation.CreatedDate;
+010: import org.springframework.data.annotation.LastModifiedDate;
+011: import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+012: 
+013: import java.time.LocalDateTime;
+014: 
+015: @Entity
+016: @Table(name = "tbl_members")
+017: @Getter
+018: @ToString
+019: @AllArgsConstructor
+020: @NoArgsConstructor
+021: @Builder
+022: @EntityListeners(value = { AuditingEntityListener.class })
+023: public class MemberEntity {
+024: 
+025:   @Id
+026:   private String mid;
+027: 
+028:   private String mpw;
+029: 
+030:   private String mname;
+031: 
+032:   private String email;
+033: 
+034:   @CreatedDate
+035:   private LocalDateTime joinDate;
+036: 
+037:   @LastModifiedDate
+038:   private LocalDateTime modifiedDate;
+039: 
+040:   //일반 화원, 관리자
+041:   private String role;
+042: 
+043:   public void changePassword(String password) {
+044:     this.mpw = password;
+045:   }
+046: 
+047:   public void changeName(String name) {
+048:     this.mname = name;
+049:   }
+050: 
+051:   public void changeEmail(String email) {
+052:     this.email = email;
+053:   }
+054: 
+055:   public void changeRole(String role) {
+056:     this.role = role;
+057:   }
+058: 
+059: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/controller/advice/TokenControllerAdvice.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.controller.advice;
+002: 
+003: 
+004: import lombok.extern.log4j.Log4j2;
+005: import org.springframework.http.HttpStatus;
+006: import org.springframework.http.ResponseEntity;
+007: import org.springframework.security.access.AccessDeniedException;
+008: import org.springframework.web.bind.annotation.ExceptionHandler;
+009: import org.springframework.web.bind.annotation.RestControllerAdvice;
+010: import org.zerock.ex3.member.exception.MemberTaskException;
+011: 
+012: import java.util.HashMap;
+013: import java.util.Map;
+014: 
+015: @RestControllerAdvice
+016: @Log4j2
+017: public class TokenControllerAdvice {
+018: 
+019:   @ExceptionHandler(MemberTaskException.class)
+020:   public ResponseEntity<Map<String, String>> handleTaskException(MemberTaskException ex) {
+021: 
+022:     log.error(ex.getMessage());
+023: 
+024:     String msg = ex.getMsg();
+025:     int status = ex.getCode();
+026: 
+027:     Map<String, String> map = Map.of("error", msg);
+028: 
+029: 
+030:     return ResponseEntity.status(status).body(map);
+031:   }
+032: 
+033: 
+034:   @ExceptionHandler(AccessDeniedException.class)
+035:   public ResponseEntity<?> handleAccessDeniedException(AccessDeniedException exception) {
+036: 
+037:     log.info("handleAccessDeniedException..................");
+038: 
+039:     Map<String, Object> errors = new HashMap<>();
+040:     errors.put("message", exception.getMessage());
+041: 
+042:     return new ResponseEntity<>(errors, HttpStatus.FORBIDDEN);
+043:   }
+044: 
+045: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/controller/TokenController.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.controller;
+002: 
+003: 
+004: import io.jsonwebtoken.ExpiredJwtException;
+005: import lombok.RequiredArgsConstructor;
+006: import lombok.extern.log4j.Log4j2;
+007: import org.springframework.http.ResponseEntity;
+008: import org.springframework.web.bind.annotation.*;
+009: import org.zerock.ex3.member.dto.MemberDTO;
+010: import org.zerock.ex3.member.security.util.JWTUtil;
+011: import org.zerock.ex3.member.service.MemberService;
+012: 
+013: import java.util.Map;
+014: 
+015: @RestController
+016: @RequestMapping("/api/v1/token")
+017: @Log4j2
+018: @RequiredArgsConstructor
+019: public class TokenController {
+020: 
+021:   private final MemberService memberService;
+022: 
+023:   private final JWTUtil jwtUtil;
+024: 
+025:   @PostMapping("/make")
+026:   public ResponseEntity<Map<String, String>> makeToken(@RequestBody MemberDTO memberDTO ) {
+027: 
+028:     log.info("make token............");
+029: 
+030:     MemberDTO memberDTOResult = memberService.read(memberDTO.getMid(), memberDTO.getMpw());
+031: 
+032:     log.info(memberDTOResult);
+033: 
+034:     String mid = memberDTOResult.getMid();
+035: 
+036:     Map<String, Object> dataMap = memberDTOResult.getDataMap();
+037: 
+038:     String accessToken = jwtUtil.createToken(dataMap, 10 * 60* 24);
+039: 
+040:     String refreshToken = jwtUtil.createToken(Map.of("mid", mid), 60 * 24 * 7);
+041: 
+042:     log.info("accessToken: " + accessToken);
+043:     log.info("refreshToken: " + refreshToken);
+044: 
+045: 
+046:     return ResponseEntity.ok(
+047:             Map.of("accessToken", accessToken, "refreshToken", refreshToken)
+048:     );
+049: 
+050:   }
+051: 
+052:   @PostMapping("/refresh")
+053:   public ResponseEntity<Map<String, String>> refreshToken(
+054:           @RequestHeader("Authorization") String accessTokenStr,
+055:           @RequestParam("refreshToken") String refreshToken,
+056:           @RequestParam("mid") String mid
+057:   ){
+058: 
+059:     log.info("access token with Bearer............" + accessTokenStr);
+060: 
+061:     if(accessTokenStr == null || !accessTokenStr.startsWith("Bearer ")) {
+062:       return handleException("No Access Token", 400); //400 Bad Request
+063:     }
+064: 
+065:     if(refreshToken == null) {
+066:       return handleException("No Refresh Token", 400); //400 Bad Request
+067:     }
+068: 
+069:     log.info("refresh token............" + refreshToken);
+070: 
+071:     if(mid == null) {
+072:       return handleException("No Mid", 400); //400 Bad Request
+073:     }
+074: 
+075:     //Access Token이 만료되었는지 확인
+076:     String accessToken = accessTokenStr.substring(7);
+077: 
+078:     try{
+079:       jwtUtil.validateToken(accessToken);
+080: 
+081:       //아직 만료 기한이 남아 있는 상황
+082:       Map<String, String> data = makeData(mid, accessToken, refreshToken);
+083: 
+084:       log.info("Access Token is not expired..................");
+085: 
+086: 
+087:       return ResponseEntity.ok(data);
+088: 
+089:     }catch(ExpiredJwtException expiredJwtException) {
+090: 
+091:       try {
+092:         //Refresh가 필요한 상황
+093:         Map<String, String> newTokenMap = makeNewToken(mid, refreshToken);
+094:         return ResponseEntity.ok(newTokenMap);
+095: 
+096:       }catch(Exception e) {
+097:         return handleException("REFRESH "+e.getMessage(), 400); //400 Bad Request
+098:       }
+099: 
+100:     }catch(Exception e) {
+101:       e.printStackTrace(); //디버깅용
+102:       return handleException(e.getMessage(), 400); //400 Bad Request
+103:     }
+104:   }
+105: 
+106: 
+107:   private Map<String, String> makeData(String mid, String accesssToken, String refreshToken){
+108: 
+109:     return Map.of("mid", mid, "accessToken", accesssToken, "refreshToken", refreshToken);
+110:   }
+111: 
+112:   private ResponseEntity<Map<String, String>> handleException(String msg, int status) {
+113: 
+114:     return ResponseEntity.status(status).body(Map.of("error", msg));
+115:   }
+116: 
+117: 
+118:   private Map<String, String> makeNewToken(String mid, String refreshToken) {
+119: 
+120:     Map<String, Object> claims = jwtUtil.validateToken(refreshToken);
+121: 
+122:     log.info("refresh token claims: " + claims);
+123: 
+124:     if (!mid.equals(claims.get("mid").toString())) {
+125:       throw new RuntimeException("Invalid Refresh Token Host");
+126:     }
+127: 
+128:     // mid를 이용해서 사용자 정보를 다시 확인한 후에 새로운 토큰 생성
+129:     MemberDTO memberDTO = memberService.getByMid(mid);
+130: 
+131:     Map<String, Object> newClaims = memberDTO.getDataMap();
+132: 
+133:     String newAccessToken = jwtUtil.createToken(newClaims, 10 * 60* 24);
+134: 
+135:     String newRefreshToken = jwtUtil.createToken(Map.of("mid", mid), 60 * 24 * 7);
+136: 
+137:     return makeData(mid, newAccessToken, newRefreshToken);
+138: 
+139:   }
+140: 
+141: 
+142: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/service/MemberService.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.service;
+002: 
+003: import lombok.RequiredArgsConstructor;
+004: import lombok.extern.log4j.Log4j2;
+005: import org.springframework.security.crypto.password.PasswordEncoder;
+006: import org.springframework.stereotype.Service;
+007: import org.springframework.transaction.annotation.Transactional;
+008: import org.zerock.ex3.member.dto.MemberDTO;
+009: import org.zerock.ex3.member.entity.MemberEntity;
+010: import org.zerock.ex3.member.exception.MemberExceptions;
+011: import org.zerock.ex3.member.repository.MemberRepository;
+012: 
+013: 
+014: import java.util.Optional;
+015: 
+016: @Service
+017: @RequiredArgsConstructor
+018: @Log4j2
+019: @Transactional
+020: public class MemberService {
+021: 
+022:   private final MemberRepository memberRepository;
+023: 
+024:   private final PasswordEncoder passwordEncoder;
+025: 
+026:   public MemberDTO read(String mid, String mpw) {
+027: 
+028:     Optional<MemberEntity> result = memberRepository.findById(mid);
+029: 
+030:     MemberEntity memberEntity = result.orElseThrow(MemberExceptions.BAD_CREDENTIALS::get);
+031: 
+032:     if (!passwordEncoder.matches(mpw, memberEntity.getMpw())) {
+033:       throw MemberExceptions.BAD_CREDENTIALS.get();
+034:     }
+035: 
+036:     return new MemberDTO(memberEntity);
+037: 
+038:   }
+039: 
+040:   public MemberDTO getByMid(String mid) {
+041: 
+042:     Optional<MemberEntity> result = memberRepository.findById(mid);
+043: 
+044:     MemberEntity memberEntity = result.orElseThrow(MemberExceptions.NOT_FOUND::get);
+045: 
+046:     return new MemberDTO(memberEntity);
+047: 
+048:   }
+049: 
+050: 
+051: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/exception/MemberExceptions.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.exception;
+002: 
+003: public enum MemberExceptions {
+004: 
+005:   NOT_FOUND("NOT_FOUND", 404),
+006:   DUPLICATE("DUPLICATE", 409),
+007:   INVALID("INVALID", 400),
+008: 
+009:   BAD_CREDENTIALS("BAD_CREDENTIALS", 401);
+010: 
+011: 
+012:   private MemberTaskException memberTaskException;
+013: 
+014:   MemberExceptions(String msg, int code) {
+015:     memberTaskException = new MemberTaskException(msg, code);
+016:   }
+017: 
+018:   public MemberTaskException get() {
+019:     return memberTaskException;
+020:   }
+021: 
+022: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/exception/MemberTaskException.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.exception;
+002: 
+003: 
+004: import lombok.Data;
+005: import lombok.Getter;
+006: 
+007: @Getter
+008: public class MemberTaskException extends RuntimeException{
+009: 
+010:   private String msg;
+011:   private int code;
+012: 
+013:   public MemberTaskException(String msg, int code) {
+014:     this.msg = msg;
+015:     this.code = code;
+016:   }
+017: 
+018: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/dto/ProductDTO.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.dto;
+002: 
+003: 
+004: import jakarta.validation.constraints.Min;
+005: import jakarta.validation.constraints.NotEmpty;
+006: import lombok.Data;
+007: import lombok.NoArgsConstructor;
+008: import org.zerock.ex3.product.entity.ProductEntity;
+009: import org.zerock.ex3.product.entity.ProductImage;
+010: 
+011: import java.util.List;
+012: import java.util.stream.Collectors;
+013: 
+014: 
+015: @Data
+016: @NoArgsConstructor
+017: public class ProductDTO {
+018: 
+019:   private Long pno;
+020: 
+021:   @NotEmpty
+022:   private String pname;
+023: 
+024:   @Min(0)
+025:   private int price;
+026: 
+027:   private String content;
+028: 
+029:   @NotEmpty
+030:   private String writer;
+031: 
+032: 
+033:   private List<String> imageList;
+034: 
+035:   private long reviewCount;
+036: 
+037:   public ProductDTO(ProductEntity productEntity) {
+038:     this.pno = productEntity.getPno();
+039:     this.pname = productEntity.getPname();
+040:     this.price = productEntity.getPrice();
+041:     this.content = productEntity.getContent();
+042:     this.writer = productEntity.getWriter();
+043:     this.imageList =
+044:             productEntity.getImages().stream()
+045:                     .map(ProductImage::getFileName)
+046:                     .collect(Collectors.toList());
+047:   }
+048: 
+049:   public ProductEntity toEntity() {
+050:     ProductEntity productEntity = ProductEntity.builder()
+051:             .pno(pno)
+052:             .pname(pname)
+053:             .price(price)
+054:             .content(content)
+055:             .writer(writer)
+056:             .build();
+057: 
+058:     if(imageList == null || imageList.isEmpty()) {
+059:       return productEntity;
+060:     }
+061: 
+062:     imageList.forEach(productEntity::addImage);
+063: 
+064:     return productEntity;
+065:   }
+066: 
+067: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/dto/PageRequestDTO.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.dto;
+002: 
+003: 
+004: import jakarta.validation.constraints.Max;
+005: import jakarta.validation.constraints.Min;
+006: import lombok.AllArgsConstructor;
+007: import lombok.Builder;
+008: import lombok.Data;
+009: import lombok.NoArgsConstructor;
+010: import org.springframework.data.domain.Pageable;
+011: import org.springframework.data.domain.Sort;
+012: 
+013: @Data
+014: @Builder
+015: @AllArgsConstructor
+016: @NoArgsConstructor
+017: public class PageRequestDTO {
+018: 
+019: 
+020:   @Min(1)
+021:   @Builder.Default
+022:   private int page = 1;
+023: 
+024:   @Min(10)
+025:   @Max(100)
+026:   @Builder.Default
+027:   private int size = 10;
+028: 
+029:   public Pageable getPageable( Sort sort) {
+030: 
+031:     return org.springframework.data.domain.PageRequest.of(page - 1, size, sort);
+032:   }
+033: 
+034: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/dto/ProductListDTO.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.dto;
+002: 
+003: import lombok.Data;
+004: import lombok.NoArgsConstructor;
+005: 
+006: @Data
+007: @NoArgsConstructor
+008: public class ProductListDTO {
+009: 
+010:   private Long pno;
+011:   private String pname;
+012:   private int price;
+013:   private String writer;
+014:   private String productImage;
+015: 
+016:   private long reviewCount;
+017: 
+018: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/repository/ProductRepository.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.repository;
+002: 
+003: import org.springframework.data.domain.Page;
+004: import org.springframework.data.domain.Pageable;
+005: import org.springframework.data.jpa.repository.EntityGraph;
+006: import org.springframework.data.jpa.repository.JpaRepository;
+007: import org.springframework.data.jpa.repository.Query;
+008: import org.springframework.data.repository.query.Param;
+009: import org.zerock.ex3.product.dto.ProductDTO;
+010: import org.zerock.ex3.product.entity.ProductEntity;
+011: import org.zerock.ex3.product.repository.search.ProductSearch;
+012: 
+013: import java.util.Optional;
+014: 
+015: public interface ProductRepository extends JpaRepository<ProductEntity, Long> , ProductSearch {
+016: 
+017: //  @EntityGraph(attributePaths = {"images"}, type = EntityGraph.EntityGraphType.FETCH)
+018: //  @Query("select p from ProductEntity p where p.pno = :pno")
+019: //  Optional<ProductEntity> getProduct(@Param("pno") Long pno);
+020: 
+021:   @Query("select p from ProductEntity p join fetch  p.images pi where p.pno = :pno")
+022:   Optional<ProductEntity> getProduct(@Param("pno") Long pno);
+023: 
+024:   @Query("select p from ProductEntity p join fetch  p.images pi where p.pno = :pno")
+025:   Optional<ProductDTO> getProductDTO(@Param("pno") Long pno);
+026: 
+027: 
+028:   @Query("select p from ProductEntity p join fetch  p.images pi ")
+029:   Page<ProductDTO> listQuery(Pageable pageable);
+030: 
+031: 
+032: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/repository/search/ProductSearch.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.repository.search;
+002: 
+003: import org.springframework.data.domain.Page;
+004: import org.springframework.data.domain.Pageable;
+005: import org.zerock.ex3.product.dto.ProductDTO;
+006: import org.zerock.ex3.product.dto.ProductListDTO;
+007: 
+008: public interface ProductSearch {
+009: 
+010:   Page<ProductListDTO> list(Pageable pageable);
+011: 
+012:   Page<ProductDTO> listWithAllImages(Pageable pageable);
+013: 
+014:   Page<ProductDTO> listFetchAllImages(Pageable pageable);
+015: 
+016:   Page<ProductListDTO> listWithReviewCount(Pageable pageable);
+017: 
+018:   Page<ProductDTO> listWithAllImagesReviewCount(Pageable pageable);
+019: 
+020: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/repository/search/ProductSearchImpl.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.repository.search;
+002: 
+003: import com.querydsl.core.Tuple;
+004: import com.querydsl.core.types.Projections;
+005: import com.querydsl.jpa.JPQLQuery;
+006: import org.springframework.data.domain.Page;
+007: import org.springframework.data.domain.PageImpl;
+008: import org.springframework.data.domain.Pageable;
+009: import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
+010: import org.zerock.ex3.product.dto.ProductDTO;
+011: import org.zerock.ex3.product.dto.ProductListDTO;
+012: import org.zerock.ex3.product.entity.ProductEntity;
+013: import org.zerock.ex3.product.entity.QProductEntity;
+014: import org.zerock.ex3.product.entity.QProductImage;
+015: import org.zerock.ex3.review.entity.QReviewEntity;
+016: 
+017: import java.util.List;
+018: 
+019: public class ProductSearchImpl extends QuerydslRepositorySupport implements ProductSearch{
+020: 
+021:   public ProductSearchImpl() {
+022:     super(ProductEntity.class);
+023:   }
+024: 
+025:   @Override
+026:   public Page<ProductListDTO> list(Pageable pageable) {
+027: 
+028:     QProductEntity productEntity = QProductEntity.productEntity;
+029:     QProductImage productImage = QProductImage.productImage;
+030: 
+031:     JPQLQuery<ProductEntity> query = from(productEntity);
+032:     query.leftJoin(productEntity.images, productImage);
+033: 
+034:     //where productImage.idx = 0
+035:     query.where(productImage.idx.eq(0));
+036: 
+037:     //Long pno, String pname, int price, String writer, String productImage
+038:     JPQLQuery<ProductListDTO> dtojpqlQuery = query.select(Projections.bean(ProductListDTO.class,
+039:             productEntity.pno,
+040:             productEntity.pname,
+041:             productEntity.price,
+042:             productEntity.writer,
+043:             productImage.fileName.as("productImage")));
+044: 
+045:     this.getQuerydsl().applyPagination(pageable, dtojpqlQuery);
+046: 
+047:     java.util.List<ProductListDTO> dtoList = dtojpqlQuery.fetch();
+048: 
+049:     long count = dtojpqlQuery.fetchCount();
+050: 
+051:     return new PageImpl<>(dtoList, pageable, count);
+052:   }
+053: 
+054:   @Override
+055:   public Page<ProductDTO> listWithAllImages(Pageable pageable) {
+056: 
+057:     QProductEntity productEntity = QProductEntity.productEntity;
+058: 
+059:     JPQLQuery<ProductEntity> query = from(productEntity);
+060: 
+061:     this.getQuerydsl().applyPagination(pageable, query);
+062: 
+063:     List<ProductEntity> entityList = query.fetch();
+064: 
+065:     long count = query.fetchCount();
+066: 
+067: //    for(ProductEntity entity : entityList){
+068: //      System.out.println(entity);
+069: //      System.out.println(entity.getImages());
+070: //      System.out.println("-------------------------------");
+071: //    }
+072: 
+073:     List<ProductDTO> dtoList = entityList.stream().map(ProductDTO::new).toList();
+074: 
+075:     return new PageImpl<>(dtoList, pageable, count);
+076:   }
+077: 
+078:   @Override
+079:   public Page<ProductDTO> listFetchAllImages(Pageable pageable) {
+080: 
+081:     QProductEntity productEntity = QProductEntity.productEntity;
+082:     QProductImage productImage = QProductImage.productImage;
+083: 
+084:     JPQLQuery<ProductEntity> query = from(productEntity);
+085:     query.leftJoin(productEntity.images, productImage).fetchJoin();
+086: 
+087:     this.getQuerydsl().applyPagination(pageable, query);
+088: 
+089:     List<ProductEntity> entityList = query.fetch();
+090: 
+091:     long count = query.fetchCount();
+092: 
+093: //    for (ProductEntity entity : entityList) {
+094: //      System.out.println(entity);
+095: //      System.out.println(entity.getImages());
+096: //      System.out.println("-------------------------------");
+097: //    }
+098: 
+099:     List<ProductDTO> dtoList = entityList.stream().map(ProductDTO::new).toList();
+100: 
+101: 
+102:     return new PageImpl<>(dtoList, pageable, count);
+103: 
+104:   }
+105: 
+106:   @Override
+107:   public Page<ProductListDTO> listWithReviewCount(Pageable pageable) {
+108: 
+109:     QProductEntity productEntity = QProductEntity.productEntity;
+110:     QReviewEntity reviewEntity = QReviewEntity.reviewEntity;
+111:     QProductImage productImage = QProductImage.productImage;
+112: 
+113:     JPQLQuery<ProductEntity> query = from(productEntity);
+114:     query.leftJoin(reviewEntity).on(reviewEntity.productEntity.eq(productEntity));
+115:     query.leftJoin(productEntity.images, productImage);
+116: 
+117:     //where productImage.idx = 0
+118:     query.where(productImage.idx.eq(0));
+119: 
+120:     this.getQuerydsl().applyPagination(pageable, query);
+121: 
+122:     //group by
+123:     query.groupBy(productEntity);
+124: 
+125: 
+126:     //Long pno, String pname, int price, String writer, String productImage
+127:     JPQLQuery<ProductListDTO> dtojpqlQuery = query.select(Projections.bean(ProductListDTO.class,
+128:             productEntity.pno,
+129:             productEntity.pname,
+130:             productEntity.price,
+131:             productEntity.writer,
+132:             productImage.fileName.as("productImage"),
+133:             reviewEntity.countDistinct().as("reviewCount")));
+134: 
+135: 
+136:     this.getQuerydsl().applyPagination(pageable, dtojpqlQuery);
+137: 
+138:     java.util.List<ProductListDTO> dtoList = dtojpqlQuery.fetch();
+139: 
+140:     long count = dtojpqlQuery.fetchCount();
+141: 
+142:     return new PageImpl<>(dtoList, pageable, count);
+143: 
+144:   }
+145: 
+146:   @Override
+147:   public Page<ProductDTO> listWithAllImagesReviewCount(Pageable pageable) {
+148: 
+149:     QProductEntity productEntity = QProductEntity.productEntity;
+150:     QReviewEntity reviewEntity = QReviewEntity.reviewEntity;
+151: 
+152:     JPQLQuery<ProductEntity> query = from(productEntity);
+153:     query.leftJoin(reviewEntity).on(reviewEntity.productEntity.eq(productEntity));
+154: 
+155:     this.getQuerydsl().applyPagination(pageable, query);
+156: 
+157:     query.groupBy(productEntity);
+158: 
+159:     JPQLQuery<Tuple> tupleJPQLQuery = query.select(productEntity, reviewEntity.countDistinct());
+160: 
+161:     List<Tuple> result = tupleJPQLQuery.fetch();
+162: 
+163:     List<ProductDTO> dtoList = result.stream().map(tuple -> {
+164:       ProductEntity product = tuple.get(0, ProductEntity.class);
+165:       long count = tuple.get(1, Long.class);
+166: 
+167:       ProductDTO dto = new ProductDTO(product);
+168: 
+169:       dto.setReviewCount(count);
+170: 
+171:       return dto;
+172:     }).toList();
+173: 
+174:     return new PageImpl<>(dtoList, pageable, tupleJPQLQuery.fetchCount());
+175:   }
+176: 
+177: 
+178: 
+179: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/entity/ProductEntity.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.entity;
+002: 
+003: 
+004: import jakarta.persistence.*;
+005: import lombok.*;
+006: import org.hibernate.annotations.BatchSize;
+007: import org.springframework.data.annotation.CreatedDate;
+008: import org.springframework.data.annotation.LastModifiedDate;
+009: import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+010: 
+011: import java.time.LocalDateTime;
+012: import java.util.*;
+013: 
+014: @Entity
+015: @Table(name = "tbl_products")
+016: @Getter
+017: @ToString(exclude = "images")
+018: @AllArgsConstructor
+019: @NoArgsConstructor
+020: @Builder
+021: @EntityListeners(value = { AuditingEntityListener.class })
+022: public class ProductEntity {
+023: 
+024:   @Id
+025:   @GeneratedValue(strategy = GenerationType.IDENTITY)
+026:   private Long pno;
+027: 
+028:   private String pname;
+029: 
+030:   private int price;
+031: 
+032:   private String content;
+033: 
+034:   private String writer;
+035: 
+036:   @CreatedDate
+037:   private LocalDateTime joinDate;
+038: 
+039:   @LastModifiedDate
+040:   private LocalDateTime modifiedDate;
+041: 
+042:   @ElementCollection(fetch = FetchType.LAZY)
+043:   @CollectionTable(name = "tbl_product_images", joinColumns = @JoinColumn(name = "pno"))
+044:   @Builder.Default
+045:   @BatchSize(size = 100)
+046:   private SortedSet<ProductImage> images = new TreeSet<>();
+047: 
+048: 
+049:   public void addImage(String fileName) {
+050: 
+051:     ProductImage productImage = ProductImage.builder()
+052:             .fileName(fileName)
+053:             .idx(images.size())
+054:             .build();
+055:     images.add(productImage);
+056:   }
+057: 
+058:   public void clearImages() {
+059:     images.clear();
+060:   }
+061: 
+062:   public void changeTitle(String title) {
+063:     this.pname = title;
+064:   }
+065: 
+066:   public void changePrice(int price) {
+067:     this.price = price;
+068:   }
+069: 
+070:   private void changeContent(String content) {
+071:     this.content = content;
+072:   }
+073: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/entity/ProductImage.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.entity;
+002: 
+003: import jakarta.persistence.Embeddable;
+004: import lombok.*;
+005: 
+006: @Embeddable
+007: @Builder
+008: @AllArgsConstructor
+009: @NoArgsConstructor
+010: @Getter
+011: @ToString
+012: public class ProductImage implements Comparable<ProductImage>{
+013: 
+014:   private int idx;
+015: 
+016:   private String fileName;
+017: 
+018:   @Override
+019:   public int compareTo(ProductImage o) {
+020:     return this.idx - o.idx;
+021:   }
+022: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/controller/ProductController.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.controller;
+002: 
+003: 
+004: import lombok.RequiredArgsConstructor;
+005: import lombok.extern.log4j.Log4j2;
+006: import org.springframework.data.domain.Page;
+007: import org.springframework.http.ResponseEntity;
+008: import org.springframework.security.core.Authentication;
+009: import org.springframework.security.core.GrantedAuthority;
+010: import org.springframework.validation.annotation.Validated;
+011: import org.springframework.web.bind.annotation.*;
+012: import org.zerock.ex3.product.dto.PageRequestDTO;
+013: import org.zerock.ex3.product.dto.ProductDTO;
+014: import org.zerock.ex3.product.dto.ProductListDTO;
+015: import org.zerock.ex3.product.exception.ProductExceptions;
+016: import org.zerock.ex3.product.service.ProductService;
+017: 
+018: import java.security.Principal;
+019: import java.util.Collection;
+020: import java.util.Map;
+021: 
+022: 
+023: @RestController
+024: @Log4j2
+025: @RequiredArgsConstructor
+026: @RequestMapping("/api/v1/products")
+027: public class ProductController {
+028: 
+029:   private final ProductService productService;
+030: 
+031:   @GetMapping("/list")
+032:   public ResponseEntity<Page<ProductListDTO>> list(@Validated PageRequestDTO pageRequestDTO, Principal principal) {
+033: 
+034:     log.info(pageRequestDTO);
+035:     log.info(principal.getName());
+036: 
+037:     return ResponseEntity.ok(productService.getList(pageRequestDTO));
+038:   }
+039: 
+040:   @PostMapping("")
+041:   public ResponseEntity<ProductDTO> register(
+042:           @RequestBody @Validated ProductDTO productDTO, Principal principal) {
+043: 
+044:     log.info("register............");
+045:     log.info(productDTO);
+046: 
+047:     if(productDTO.getImageList() == null || productDTO.getImageList().isEmpty()){
+048:       throw ProductExceptions.PRODUCT_NO_IMAGE.get();
+049:     }
+050: 
+051:     if(!principal.getName().equals(productDTO.getWriter())) {
+052:       throw ProductExceptions.PRODUCT_WRITER_ERROR.get();
+053:     }
+054: 
+055:     return ResponseEntity.ok(productService.register(productDTO));
+056: 
+057:   }
+058: 
+059:   @GetMapping("/{pno}")
+060:   public ResponseEntity<ProductDTO> read(@PathVariable("pno") Long pno) {
+061: 
+062:     log.info("read............");
+063:     log.info(pno);
+064: 
+065:     ProductDTO productDTO = productService.read(pno);
+066: 
+067:     return ResponseEntity.ok(productDTO);
+068:   }
+069: 
+070:   @DeleteMapping("/{pno}")
+071:   public ResponseEntity<Map<String, String>> remove(@PathVariable("pno") Long pno, Authentication authentication) {
+072: 
+073:     log.info("remove............");
+074:     log.info(pno);
+075:     log.info(authentication.getName());
+076:     log.info(authentication.getAuthorities());
+077: 
+078:     ProductDTO productDTO =  productService.read(pno);
+079: 
+080:     if(!productDTO.getWriter().equals(authentication.getName())) {
+081:       //현재 사용자의 권한
+082:       Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+083:       //ADMIN 권한이 없는 경우 예외 발생
+084:       authorities.stream().filter(authority -> authority.getAuthority().equals("ROLE_ADMIN"))
+085:               .findAny().orElseThrow(ProductExceptions.PRODUCT_WRITER_ERROR::get);
+086:     }
+087: 
+088:     productService.remove(pno);
+089: 
+090:     return ResponseEntity.ok(Map.of("result","success"));
+091:   }
+092: 
+093:   @PutMapping("/{pno}")
+094:   public ResponseEntity<ProductDTO> modify(@PathVariable("pno") Long pno,
+095:                                            @RequestBody @Validated ProductDTO productDTO,
+096:                                            Authentication authentication) {
+097: 
+098:     log.info("modify............");
+099:     log.info(pno);
+100:     log.info(productDTO);
+101:     log.info(authentication.getName());
+102: 
+103:     if(!pno.equals(productDTO.getPno())){
+104:       throw ProductExceptions.PRODUCT_NOT_FOUND.get();
+105:     }
+106: 
+107:     if(productDTO.getImageList() == null || productDTO.getImageList().isEmpty()){
+108:       throw ProductExceptions.PRODUCT_NO_IMAGE.get();
+109:     }
+110: 
+111:     if(!productDTO.getWriter().equals(authentication.getName())) {
+112:       throw ProductExceptions.PRODUCT_WRITER_ERROR.get();
+113:     }
+114: 
+115:     return ResponseEntity.ok(productService.modify(productDTO));
+116:   }
+117: 
+118: 
+119: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/controller/advice/ProductControllerAdvice.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.controller.advice;
+002: 
+003: 
+004: import lombok.extern.log4j.Log4j2;
+005: import org.springframework.http.ResponseEntity;
+006: import org.springframework.validation.ObjectError;
+007: import org.springframework.web.bind.MethodArgumentNotValidException;
+008: import org.springframework.web.bind.annotation.ExceptionHandler;
+009: import org.springframework.web.bind.annotation.RestControllerAdvice;
+010: import org.zerock.ex3.product.exception.ProductTaskException;
+011: 
+012: import java.util.List;
+013: import java.util.Map;
+014: import java.util.stream.Collectors;
+015: 
+016: @RestControllerAdvice
+017: @Log4j2
+018: public class ProductControllerAdvice {
+019: 
+020:   @ExceptionHandler(MethodArgumentNotValidException.class)
+021:   public ResponseEntity<Map<String, String>> handleMethodArgumentNotValidException(
+022:           MethodArgumentNotValidException e) {
+023: 
+024:     log.error("handleMethodArgumentNotValidException............");
+025:     log.error(e.getMessage());
+026: 
+027:     List<ObjectError> errors = e.getBindingResult().getAllErrors();
+028:     String errorMessage = errors.stream()
+029:             .map(ObjectError::getDefaultMessage)
+030:             .collect(Collectors.joining(", "));
+031: 
+032:     return ResponseEntity.badRequest().body(Map.of("error", errorMessage));
+033: 
+034:   }
+035: 
+036:   @ExceptionHandler(ProductTaskException.class)
+037:   public ResponseEntity<Map<String, String>> handleProductTaskException(ProductTaskException e) {
+038:     log.error("ProductTaskException............");
+039:     log.error(e.getClass().getName());
+040:     log.error(e.getMessage());
+041: 
+042:     int status = e.getCode();
+043: 
+044:     return ResponseEntity.status(status).body(Map.of("error", e.getMessage()));
+045:   }
+046: 
+047: 
+048: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/service/ProductService.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.service;
+002: 
+003: 
+004: import lombok.RequiredArgsConstructor;
+005: import lombok.extern.log4j.Log4j2;
+006: import org.springframework.data.domain.Page;
+007: import org.springframework.data.domain.Pageable;
+008: import org.springframework.data.domain.Sort;
+009: import org.springframework.stereotype.Service;
+010: import org.springframework.transaction.annotation.Transactional;
+011: import org.zerock.ex3.product.dto.PageRequestDTO;
+012: import org.zerock.ex3.product.dto.ProductDTO;
+013: import org.zerock.ex3.product.dto.ProductListDTO;
+014: import org.zerock.ex3.product.entity.ProductEntity;
+015: import org.zerock.ex3.product.exception.ProductExceptions;
+016: import org.zerock.ex3.product.repository.ProductRepository;
+017: 
+018: 
+019: @Service
+020: @Log4j2
+021: @RequiredArgsConstructor
+022: @Transactional
+023: public class ProductService {
+024: 
+025:   private final ProductRepository productRepository;
+026: 
+027:   public ProductDTO register(ProductDTO productDTO) {
+028: 
+029:     try{
+030:       log.info("register............");
+031:       log.info(productDTO);
+032: 
+033:       ProductEntity productEntity = productDTO.toEntity();
+034: 
+035:       productRepository.save(productEntity);
+036: 
+037:       return new ProductDTO(productEntity);
+038: 
+039:     }catch(Exception e){
+040:       log.error(e.getMessage());
+041:       throw ProductExceptions.PRODUCT_NOT_REGISTERED.get();
+042:     }//end catch
+043:   }
+044: 
+045:   @Transactional(readOnly = true)
+046:   public ProductDTO read(Long pno){
+047:     log.info("read............");
+048:     log.info(pno);
+049: 
+050:     java.util.Optional<ProductEntity> result = productRepository.getProduct(pno);
+051: 
+052:     ProductEntity productEntity =
+053:             result.orElseThrow(ProductExceptions.PRODUCT_NOT_FOUND::get);
+054: 
+055:     return new ProductDTO(productEntity);
+056:   }
+057: 
+058:   public void remove(Long pno){
+059:     log.info("remove............");
+060:     log.info(pno);
+061: 
+062:     java.util.Optional<ProductEntity> result = productRepository.findById(pno);
+063: 
+064:     ProductEntity productEntity =
+065:             result.orElseThrow(ProductExceptions.PRODUCT_NOT_FOUND::get);
+066: 
+067:     try{
+068:       productRepository.delete(productEntity);
+069:     }catch(Exception e){
+070:       log.error(e.getMessage());
+071:       throw ProductExceptions.PRODUCT_NOT_REMOVED.get();
+072:     }//end catch
+073: 
+074:   }
+075: 
+076:   public ProductDTO modify(ProductDTO productDTO){
+077:     log.info("modify............");
+078:     log.info(productDTO);
+079: 
+080:     java.util.Optional<ProductEntity> result =
+081:             productRepository.findById(productDTO.getPno());
+082: 
+083:     ProductEntity productEntity =
+084:             result.orElseThrow(ProductExceptions.PRODUCT_NOT_FOUND::get);
+085: 
+086:     try{
+087:       //상품 정보 수정
+088:       productEntity.changePrice(productDTO.getPrice());
+089:       productEntity.changeTitle(productDTO.getPname());
+090: 
+091:       //기존 이미지들 삭제
+092:       productEntity.clearImages();
+093: 
+094:       //새로운 이미지들 추가
+095:       java.util.List<String> fileNames = productDTO.getImageList();
+096: 
+097:       if(fileNames != null && !fileNames.isEmpty()){
+098:         fileNames.forEach(productEntity::addImage);
+099:       }
+100: 
+101:       productRepository.save(productEntity);
+102: 
+103:       return new ProductDTO(productEntity);
+104: 
+105:     }catch(Exception e) {
+106:       log.error(e.getMessage());
+107:       throw ProductExceptions.PRODUCT_NOT_MODIFIED.get();
+108:     }//end catch
+109: 
+110:   }
+111: 
+112: 
+113:   public Page<ProductListDTO> getList(PageRequestDTO pageRequestDTO){
+114:     log.info("getList............");
+115:     log.info(pageRequestDTO);
+116: 
+117:     try{
+118: 
+119:       Pageable pageable =
+120:               pageRequestDTO.getPageable(Sort.by("pno").descending());
+121: 
+122:       return productRepository.list(pageable);
+123: 
+124:     }catch(Exception e){
+125:       log.error(e.getMessage());
+126:       throw ProductExceptions.PRODUCT_NOT_FETCHED.get();
+127:     }//end catch
+128: 
+129:   }
+130: 
+131: 
+132: 
+133: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/exception/ProductExceptions.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.exception;
+002: 
+003: public enum ProductExceptions {
+004: 
+005:   PRODUCT_NOT_FOUND("Product Not Found", 404),
+006:   PRODUCT_NOT_REGISTERED("Product Not Registered", 400),
+007:   PRODUCT_NOT_MODIFIED("Product Not Modified", 400),
+008:   PRODUCT_NOT_REMOVED("Product Not Removed", 400),
+009:   PRODUCT_NOT_FETCHED("Product Not Fetched", 400),
+010:   PRODUCT_NO_IMAGE("Product No Image", 400),
+011:   PRODUCT_WRITER_ERROR("Product Writer Error", 403);
+012: 
+013: 
+014:   private ProductTaskException productTaskException;
+015: 
+016:   ProductExceptions(String message, int code) {
+017:     this.productTaskException = new ProductTaskException(message, code);
+018:   }
+019: 
+020:   public ProductTaskException get() {
+021:     return productTaskException;
+022:   }
+023: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/product/exception/ProductTaskException.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.product.exception;
+002: 
+003: import lombok.Getter;
+004: import lombok.ToString;
+005: 
+006: @Getter
+007: @ToString
+008: public class ProductTaskException extends RuntimeException {
+009: 
+010:   private int code;
+011:   private String message;
+012: 
+013:   public ProductTaskException(String message, int code) {
+014:     super(message);
+015:     this.message = message;
+016:     this.code = code;
+017:   }
+018: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/review/dto/ReviewPageRequestDTO.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.review.dto;
+002: 
+003: import jakarta.validation.constraints.Max;
+004: import jakarta.validation.constraints.Min;
+005: import lombok.AllArgsConstructor;
+006: import lombok.Builder;
+007: import lombok.Data;
+008: import lombok.NoArgsConstructor;
+009: import org.springframework.data.domain.Pageable;
+010: import org.springframework.data.domain.Sort;
+011: 
+012: @Data
+013: @Builder
+014: @AllArgsConstructor
+015: @NoArgsConstructor
+016: public class ReviewPageRequestDTO {
+017: 
+018:   @Min(1)
+019:   @Builder.Default
+020:   private int page = 1;
+021: 
+022:   @Min(20)
+023:   @Max(100)
+024:   @Builder.Default
+025:   private int size = 20;
+026: 
+027: 
+028:   private Long pno;
+029: 
+030:   public Pageable getPageable(Sort sort) {
+031: 
+032:     return org.springframework.data.domain.PageRequest.of(page - 1, size, sort);
+033:   }
+034: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/review/dto/ReviewDTO.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.review.dto;
+002: 
+003: import lombok.AllArgsConstructor;
+004: import lombok.Builder;
+005: import lombok.Data;
+006: import lombok.NoArgsConstructor;
+007: import org.zerock.ex3.product.entity.ProductEntity;
+008: import org.zerock.ex3.review.entity.ReviewEntity;
+009: 
+010: import java.time.LocalDateTime;
+011: 
+012: @Data
+013: @NoArgsConstructor
+014: @Builder
+015: @AllArgsConstructor
+016: public class ReviewDTO {
+017: 
+018:   private Long rno;
+019: 
+020:   private String reviewText;
+021: 
+022:   private String reviewer;
+023: 
+024:   private int score;
+025: 
+026:   private Long pno;
+027: 
+028:   private LocalDateTime reviewDate;
+029: 
+030:   private LocalDateTime modifiedDate;
+031: 
+032:   public ReviewDTO(ReviewEntity reviewEntity) {
+033:     this.rno = reviewEntity.getRno();
+034:     this.reviewText = reviewEntity.getReviewText();
+035:     this.reviewer = reviewEntity.getReviewer();
+036:     this.score = reviewEntity.getScore();
+037:     this.pno = reviewEntity.getProductEntity().getPno();
+038:     this.reviewDate = reviewEntity.getReviewDate();
+039:     this.modifiedDate = reviewEntity.getModifiedDate();
+040:   }
+041: 
+042:   public ReviewEntity toEntity() {
+043: 
+044:     ProductEntity productEntity = ProductEntity.builder().pno(pno).build();
+045: 
+046:     return ReviewEntity.builder()
+047:             .rno(rno)
+048:             .reviewText(reviewText)
+049:             .reviewer(reviewer)
+050:             .score(score)
+051:             .productEntity(productEntity)
+052:             .build();
+053:   }
+054: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/review/repository/ReviewRepository.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.review.repository;
+002: 
+003: import org.springframework.data.domain.Page;
+004: import org.springframework.data.domain.Pageable;
+005: import org.springframework.data.jpa.repository.JpaRepository;
+006: import org.springframework.data.jpa.repository.Query;
+007: import org.springframework.data.repository.query.Param;
+008: import org.zerock.ex3.review.dto.ReviewDTO;
+009: import org.zerock.ex3.review.entity.ReviewEntity;
+010: 
+011: import java.util.Optional;
+012: 
+013: public interface ReviewRepository extends JpaRepository<ReviewEntity, Long> {
+014: 
+015: //  @Query("select r from ReviewEntity r join fetch  r.productEntity where r.rno = :rno")
+016: //  Optional<ReviewEntity> getWithProduct(@Param("rno") Long rno);
+017: 
+018:   @Query("select r from ReviewEntity r " +
+019:           " join fetch  r.productEntity rp " +
+020:           " join fetch rp.images " +
+021:           " where r.rno = :rno")
+022:   Optional<ReviewEntity> getWithProduct( @Param("rno") Long rno);
+023: 
+024: 
+025:   @Query("select r from ReviewEntity r where r.productEntity.pno = :pno")
+026:   Page<ReviewDTO> getListByPno(@Param("pno") Long pno, Pageable pageable);
+027: 
+028: 
+029: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/review/entity/ReviewEntity.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.review.entity;
+002: 
+003: 
+004: import jakarta.persistence.*;
+005: import lombok.*;
+006: import org.springframework.data.annotation.CreatedDate;
+007: import org.springframework.data.annotation.LastModifiedDate;
+008: import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+009: import org.zerock.ex3.product.entity.ProductEntity;
+010: 
+011: import java.time.LocalDateTime;
+012: 
+013: @Entity
+014: @Table(name = "tbl_reviews", indexes = @Index(columnList = "product_pno"))
+015: @Getter
+016: @ToString(exclude = "productEntity")
+017: @AllArgsConstructor
+018: @NoArgsConstructor
+019: @Builder
+020: @EntityListeners(value = { AuditingEntityListener.class })
+021: public class ReviewEntity {
+022: 
+023:   @Id
+024:   @GeneratedValue(strategy = GenerationType.IDENTITY)
+025:   private Long rno;
+026: 
+027:   private String reviewText;
+028: 
+029:   private String reviewer;
+030: 
+031:   private int score;
+032: 
+033:   @ManyToOne(fetch = FetchType.LAZY)
+034:   @JoinColumn(name = "product_pno")
+035:   private ProductEntity productEntity;
+036: 
+037:   @CreatedDate
+038:   private LocalDateTime reviewDate;
+039: 
+040:   @LastModifiedDate
+041:   private LocalDateTime modifiedDate;
+042: 
+043: 
+044:   public void changeReviewText(String reviewText) {
+045:     this.reviewText = reviewText;
+046:   }
+047: 
+048:   public void changeScore(int score) {
+049:     this.score = score;
+050:   }
+051: 
+052: }
+053: 
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/review/controller/advice/ReviewControllerAdvice.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.review.controller.advice;
+002: 
+003: import org.springframework.http.ResponseEntity;
+004: import org.springframework.web.bind.annotation.ExceptionHandler;
+005: import org.springframework.web.bind.annotation.RestControllerAdvice;
+006: import org.zerock.ex3.review.exception.ReviewTaskException;
+007: 
+008: import java.util.Map;
+009: 
+010: @RestControllerAdvice
+011: public class ReviewControllerAdvice {
+012: 
+013:   @ExceptionHandler(ReviewTaskException.class)
+014:   public ResponseEntity<Map<String, String>> handleReviewTaskException(ReviewTaskException exception) {
+015: 
+016:     int status = exception.getCode();
+017:     String message = exception.getMessage();
+018: 
+019:     return ResponseEntity.status(status).body(Map.of("error", message));
+020:   }
+021: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/review/controller/ReviewController.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.review.controller;
+002: 
+003: 
+004: import lombok.RequiredArgsConstructor;
+005: import lombok.extern.log4j.Log4j2;
+006: import org.springframework.http.ResponseEntity;
+007: import org.springframework.security.core.Authentication;
+008: import org.springframework.validation.annotation.Validated;
+009: import org.springframework.web.bind.annotation.*;
+010: import org.zerock.ex3.review.dto.ReviewDTO;
+011: import org.zerock.ex3.review.dto.ReviewPageRequestDTO;
+012: import org.zerock.ex3.review.exception.ReviewExceptions;
+013: import org.zerock.ex3.review.service.ReviewService;
+014: 
+015: import java.security.Principal;
+016: import java.util.Map;
+017: 
+018: @RestController
+019: @Log4j2
+020: @RequiredArgsConstructor
+021: @RequestMapping("/api/v1/reviews")
+022: public class ReviewController {
+023: 
+024:   private final ReviewService reviewService;
+025: 
+026:   @PostMapping("")
+027:   public ResponseEntity<ReviewDTO> register(@RequestBody @Validated ReviewDTO reviewDTO, Principal principal) {
+028: 
+029:     log.info("register: " + reviewDTO);
+030: 
+031:     if(!principal.getName().equals(reviewDTO.getReviewer())){
+032:       throw ReviewExceptions.REVIEWER_MISMATCH.get();
+033:     }
+034: 
+035:     //ReviewTaskException은 RuntimeException계열이므로 별도의 예외처리가 필요하지 않다.
+036:     return ResponseEntity.ok(reviewService.register(reviewDTO));
+037:   }
+038: 
+039:   @GetMapping("/{rno}")
+040:   public ResponseEntity<ReviewDTO> read(@PathVariable("rno") Long rno) {
+041: 
+042:     log.info("read: " + rno);
+043: 
+044:     return ResponseEntity.ok(reviewService.read(rno));
+045:   }
+046: 
+047:   @DeleteMapping("/{rno}")
+048:   public ResponseEntity<Map<String, String>> remove(@PathVariable("rno") Long rno, Authentication authentication) {
+049: 
+050:     log.info("remove: " + rno);
+051: 
+052:     String currentUser = authentication.getName();
+053: 
+054:     log.info("currentUser: " + currentUser);
+055: 
+056:     ReviewDTO reviewDTO = reviewService.read(rno);
+057: 
+058:     if(!currentUser.equals(reviewDTO.getReviewer()) ){
+059:       throw ReviewExceptions.REVIEWER_MISMATCH.get();
+060:     }
+061: 
+062:     reviewService.remove(rno);
+063: 
+064:     return ResponseEntity.ok().body(Map.of("result","success"));
+065:   }
+066: 
+067:   @PutMapping("/{rno}")
+068:   public ResponseEntity<ReviewDTO> modify(
+069:           @PathVariable("rno") Long rno,
+070:           @RequestBody ReviewDTO reviewDTO,
+071:           Authentication authentication) {
+072: 
+073:     log.info("modify: " + rno);
+074: 
+075:     //번호 체크
+076:     if(!rno.equals(reviewDTO.getRno())){
+077:       throw ReviewExceptions.REVIVEW_NOT_MATCHED.get();
+078:     }
+079: 
+080:     String currentUser = authentication.getName();
+081:     log.info("currentUser: " + currentUser);
+082: 
+083:     if(!currentUser.equals(reviewDTO.getReviewer()) ){
+084:       throw ReviewExceptions.REVIEWER_MISMATCH.get();
+085:     }
+086: 
+087:     return ResponseEntity.ok().body(reviewService.modify(reviewDTO));
+088:   }
+089: 
+090: 
+091:   @GetMapping("/{pno}/list")
+092:   public ResponseEntity<?> list(@PathVariable("pno") Long pno,
+093:                                @Validated ReviewPageRequestDTO pageRequestDTO) {
+094: 
+095:     pageRequestDTO.setPno(pno);
+096: 
+097:     return ResponseEntity.ok(reviewService.getList(pageRequestDTO));
+098: 
+099:   }
+100: 
+101: 
+102: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/review/service/ReviewService.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.review.service;
+002: 
+003: 
+004: import lombok.RequiredArgsConstructor;
+005: import lombok.extern.log4j.Log4j2;
+006: import org.springframework.dao.DataIntegrityViolationException;
+007: import org.springframework.data.domain.Page;
+008: import org.springframework.data.domain.Pageable;
+009: import org.springframework.data.domain.Sort;
+010: import org.springframework.stereotype.Service;
+011: import org.springframework.transaction.annotation.Transactional;
+012: import org.zerock.ex3.review.dto.ReviewDTO;
+013: import org.zerock.ex3.review.dto.ReviewPageRequestDTO;
+014: import org.zerock.ex3.review.entity.ReviewEntity;
+015: import org.zerock.ex3.review.exception.ReviewExceptions;
+016: import org.zerock.ex3.review.repository.ReviewRepository;
+017: 
+018: @Service
+019: @RequiredArgsConstructor
+020: @Log4j2
+021: @Transactional
+022: public class ReviewService {
+023: 
+024:   private final ReviewRepository reviewRepository;
+025: 
+026: 
+027:   public ReviewDTO register(ReviewDTO reviewDTO) {
+028: 
+029:     log.info("review register............");
+030: 
+031:     try {
+032:       ReviewEntity reviewEntity = reviewDTO.toEntity();
+033: 
+034:       reviewRepository.save(reviewEntity);
+035: 
+036:       return new ReviewDTO(reviewEntity);
+037: 
+038:     } catch (DataIntegrityViolationException e) {
+039:       //외래 키 위반
+040:       throw ReviewExceptions.REVIEW_PRODUCT_NOT_FOUND.get();
+041:     } catch (Exception e) {
+042:       log.error(e.getMessage());
+043:       throw ReviewExceptions.REVIEW_NOT_REGISTERED.get();
+044:     }//end catch
+045:   }
+046: 
+047:   public ReviewDTO read(Long rno) {
+048: 
+049:     ReviewEntity reviewEntity = reviewRepository.findById(rno)
+050:             .orElseThrow(ReviewExceptions.REVIEW_NOT_FOUND::get);
+051: 
+052:     return new ReviewDTO(reviewEntity);
+053:   }
+054: 
+055: 
+056:   public void remove(Long rno){
+057: 
+058:     ReviewEntity reviewEntity = reviewRepository.findById(rno)
+059:             .orElseThrow(ReviewExceptions.REVIEW_NOT_FOUND::get);
+060:     try{
+061:       reviewRepository.delete(reviewEntity);
+062:     }catch(Exception e){
+063:       log.error(e.getMessage());
+064:       throw ReviewExceptions.REVIEW_NOT_REMOVED.get();
+065:     }
+066:   }
+067: 
+068:   public ReviewDTO modify(ReviewDTO reviewDTO){
+069: 
+070:     ReviewEntity reviewEntity = reviewRepository.findById(reviewDTO.getRno())
+071:             .orElseThrow(ReviewExceptions.REVIEW_NOT_FOUND::get);
+072: 
+073:     try {
+074:       reviewEntity.changeReviewText(reviewDTO.getReviewText());
+075:       reviewEntity.changeScore(reviewDTO.getScore());
+076: 
+077:       return new ReviewDTO(reviewEntity);
+078:     }catch(Exception e){
+079:       log.error(e.getMessage());
+080:       throw ReviewExceptions.REVEIW_NOT_MODIFIED.get();
+081:     }//end catch
+082:   }
+083: 
+084: 
+085:   public Page<ReviewDTO> getList(ReviewPageRequestDTO reviewPageRequestDTO) {
+086: 
+087:     Long pno = reviewPageRequestDTO.getPno();
+088:     Pageable pageable = reviewPageRequestDTO.getPageable(Sort.by("rno").descending());
+089: 
+090:     return reviewRepository.getListByPno(pno, pageable) ;
+091:   }
+092: 
+093: 
+094: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/review/exception/ReviewTaskException.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.review.exception;
+002: 
+003: 
+004: import lombok.Data;
+005: 
+006: @Data
+007: public class ReviewTaskException extends RuntimeException{
+008: 
+009:   private String message;
+010:   private int code;
+011: 
+012:   public ReviewTaskException(String message, int code) {
+013:     super(message);
+014:     this.message = message;
+015:     this.code = code;
+016:   }
+017: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/review/exception/ReviewExceptions.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.review.exception;
+002: 
+003: public enum ReviewExceptions {
+004:   REVIEW_NOT_REGISTERED("Review Not Registered", 400),
+005:   REVIEW_PRODUCT_NOT_FOUND("Product Not Found for Review", 404),
+006: 
+007:   REVEIW_NOT_MODIFIED("Review Not Modified", 400),
+008:   REVIEW_NOT_REMOVED("Review Not Removed", 400),
+009:   REVIEW_NOT_FOUND("Review Not Found", 404),
+010:   REVIEWER_MISMATCH("Reviewer Mismatch", 400),
+011:   REVIVEW_NOT_MATCHED("Review Not Matched", 404);
+012: 
+013: 
+014: 
+015:   private final ReviewTaskException reviewTaskException;
+016: 
+017:   ReviewExceptions(String msg, int code) {
+018: 
+019:     reviewTaskException = new ReviewTaskException(msg, code);
+020:   }
+021: 
+022:   public ReviewTaskException get() {
+023:     return reviewTaskException;
+024:   }
+025: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/sample/controller/SampleController.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.sample.controller;
+002: 
+003: 
+004: import lombok.extern.log4j.Log4j2;
+005: import org.springframework.http.ResponseEntity;
+006: import org.springframework.security.access.prepost.PreAuthorize;
+007: import org.springframework.web.bind.annotation.GetMapping;
+008: import org.springframework.web.bind.annotation.RequestMapping;
+009: import org.springframework.web.bind.annotation.RestController;
+010: 
+011: @RestController
+012: @Log4j2
+013: @RequestMapping("/api/v1/samples")
+014: public class SampleController {
+015: 
+016: 
+017:   @PreAuthorize("hasRole('ROLE_USER')")
+018:   @GetMapping("/list")
+019:   public ResponseEntity<?> list() {
+020: 
+021:     log.info("list............");
+022: 
+023:     String[] arr = {"AAA", "BBB", "CCC"};
+024: 
+025:     return ResponseEntity.ok(arr);
+026: 
+027:   }
+028: 
+029: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/cart/dto/CartItemDTO.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.dto;
+002: 
+003: import lombok.Builder;
+004: import lombok.Data;
+005: 
+006: @Data
+007: @Builder
+008: public class CartItemDTO {
+009: 
+010:   private Long itemNo;
+011: 
+012:   private Long pno;
+013: 
+014:   private String pname;
+015: 
+016:   private int quantity;
+017: 
+018:   private int price;
+019: 
+020:   private String image;
+021: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/cart/dto/AddCartItemDTO.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.dto;
+002: 
+003: import lombok.Builder;
+004: import lombok.Data;
+005: 
+006: @Data
+007: @Builder
+008: public class AddCartItemDTO {
+009: 
+010:   private String holder;
+011: 
+012:   private Long pno;
+013: 
+014:   private int quantity;
+015: 
+016: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/cart/dto/ModifyCartItemDTO.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.dto;
+002: 
+003: import lombok.Builder;
+004: import lombok.Data;
+005: 
+006: @Data
+007: @Builder
+008: public class ModifyCartItemDTO {
+009: 
+010:   private Long itemNo;
+011: 
+012:   private int quantity;
+013: 
+014: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/cart/repository/CartItemRepository.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.repository;
+002: 
+003: import org.springframework.data.jpa.repository.JpaRepository;
+004: import org.springframework.data.jpa.repository.Query;
+005: import org.springframework.data.repository.query.Param;
+006: import org.zerock.ex3.cart.entity.CartItemEntity;
+007: 
+008: import java.util.List;
+009: import java.util.Optional;
+010: 
+011: public interface CartItemRepository extends JpaRepository<CartItemEntity, Long> {
+012: 
+013:   @Query("select c " +
+014:           " from CartItemEntity c  " +
+015:           " join fetch c.product " +
+016:           " join  fetch  c.product.images  " +
+017:           " where c.cart.holder = :holder" +
+018:           " order by c.itemNo desc ")
+019:   Optional<List<CartItemEntity>> getCartItemsOfHolder(@Param("holder") String holder);
+020: 
+021: 
+022:   @Query("select c , p, pi " +
+023:           " from CartItemEntity c  " +
+024:           " join c.product p " +
+025:           " join  c.product.images pi  " +
+026:           " where c.cart.holder = :holder" +
+027:           " and pi.idx = 0 "+
+028:           " order by c.itemNo desc ")
+029:   List<Object[]> getCartItemsOfHolder2(@Param("holder") String holder);
+030: 
+031:   @Query("select c.cart.holder " +
+032:           " from CartItemEntity c  " +
+033:           " where c.itemNo = :itemNo" )
+034:   Optional<String> getHolderOfCartItem(@Param("itemNo") Long itemNo);
+035: 
+036: 
+037: 
+038: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/cart/repository/CartRepository.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.repository;
+002: 
+003: import org.springframework.data.jpa.repository.JpaRepository;
+004: import org.zerock.ex3.cart.entity.CartEntity;
+005: 
+006: import java.util.Optional;
+007: 
+008: public interface CartRepository extends JpaRepository<CartEntity, Long> {
+009: 
+010:   Optional<CartEntity> findByHolder(String holder);
+011: 
+012: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/cart/entity/CartEntity.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.entity;
+002: 
+003: 
+004: import jakarta.persistence.*;
+005: import lombok.*;
+006: import org.springframework.data.annotation.CreatedDate;
+007: import org.springframework.data.annotation.LastModifiedDate;
+008: import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+009: 
+010: import java.time.LocalDateTime;
+011: 
+012: @Entity
+013: @Table(name = "tbl_carts", indexes = @Index(columnList = "holder"))
+014: @Getter
+015: @ToString
+016: @AllArgsConstructor
+017: @NoArgsConstructor
+018: @Builder
+019: @EntityListeners(value = { AuditingEntityListener.class })
+020: public class CartEntity {
+021: 
+022:   @Id
+023:   @GeneratedValue(strategy = GenerationType.IDENTITY)
+024:   private Long cno;
+025: 
+026:   private String holder;
+027: 
+028:   @CreatedDate
+029:   private LocalDateTime joinDate;
+030: 
+031:   @LastModifiedDate
+032:   private LocalDateTime modifiedDate;
+033: }
+034: 
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/cart/entity/CartItemEntity.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.entity;
+002: 
+003: import jakarta.persistence.*;
+004: import lombok.*;
+005: import org.zerock.ex3.product.entity.ProductEntity;
+006: 
+007: @Entity
+008: @Table(name = "tbl_cart_items", indexes = @Index(columnList = "cart_cno"))
+009: @Getter
+010: @ToString(exclude = {"product", "cart"})
+011: @AllArgsConstructor
+012: @NoArgsConstructor
+013: @Builder
+014: public class CartItemEntity {
+015: 
+016:   @Id
+017:   @GeneratedValue(strategy = GenerationType.IDENTITY)
+018:   private Long itemNo;
+019: 
+020: 
+021:   @ManyToOne(fetch = FetchType.LAZY)
+022:   private ProductEntity product;
+023: 
+024:   private int quantity;
+025: 
+026:   @ManyToOne(fetch = FetchType.LAZY)
+027: 
+028:   private CartEntity cart;
+029: 
+030:   public void changeQuantity(int quantity) {
+031:     this.quantity = quantity;
+032:   }
+033: 
+034: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/cart/controller/CartController.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.controller;
+002: 
+003: 
+004: import lombok.RequiredArgsConstructor;
+005: import lombok.extern.log4j.Log4j2;
+006: import org.springframework.http.ResponseEntity;
+007: import org.springframework.security.access.prepost.PreAuthorize;
+008: import org.springframework.web.bind.annotation.*;
+009: import org.zerock.ex3.cart.dto.AddCartItemDTO;
+010: import org.zerock.ex3.cart.dto.CartItemDTO;
+011: import org.zerock.ex3.cart.dto.ModifyCartItemDTO;
+012: import org.zerock.ex3.cart.service.CartService;
+013: 
+014: import java.security.Principal;
+015: import java.util.List;
+016: 
+017: @RestController
+018: @Log4j2
+019: @RequiredArgsConstructor
+020: @RequestMapping("/api/v1/carts")
+021: public class CartController {
+022: 
+023:   private final CartService cartService;
+024: 
+025: 
+026:   //Gradle 환경 주의
+027:   @PreAuthorize("authentication.name == #addCartItemDTO.holder")
+028:   @PostMapping("/addItem")
+029:   public ResponseEntity<List<CartItemDTO>> addItem(
+030:           @RequestBody AddCartItemDTO addCartItemDTO){
+031: 
+032:     log.info("add item...............");
+033: 
+034:     cartService.registerItem(addCartItemDTO);
+035: 
+036:     List<CartItemDTO> cartItemList = cartService.getAllItems(addCartItemDTO.getHolder());
+037: 
+038:     return ResponseEntity.ok(cartItemList);
+039:   }
+040: 
+041:   @GetMapping("/{cno}")
+042:   public ResponseEntity<List<CartItemDTO>> getCartItemList(
+043:           @PathVariable("cno") Long cno,
+044:           Principal principal) {
+045: 
+046:     log.info("get cart ..............." + cno);
+047: 
+048:     String mid = principal.getName();
+049: 
+050:     cartService.checkCartHolder(mid, cno);
+051: 
+052:     List<CartItemDTO> cartList = cartService.getAllItems(mid);
+053: 
+054:     return ResponseEntity.ok(cartList);
+055:   }
+056: 
+057:   @PutMapping("/modifyItem/{itemNo}")
+058:   public ResponseEntity<List<CartItemDTO>> modifyItem(
+059:           @PathVariable("itemNo") Long itemNo,
+060:           @RequestBody ModifyCartItemDTO modifyCartItemDTO,
+061:           Principal principal) {
+062: 
+063:     log.info("modify item..............." + modifyCartItemDTO);
+064: 
+065:     String mid = principal.getName();
+066: 
+067:     log.info("mid: " + mid);
+068: 
+069:     cartService.checkItemHolder(mid, itemNo);
+070: 
+071:     modifyCartItemDTO.setItemNo(itemNo);
+072: 
+073:     cartService.modifyItem(modifyCartItemDTO);
+074: 
+075:     List<CartItemDTO> cartList = cartService.getAllItems(mid);
+076: 
+077:     return ResponseEntity.ok(cartList);
+078:   }
+079: 
+080: 
+081:   @DeleteMapping("/removeItem/{itemNo}")
+082:   public ResponseEntity<List<CartItemDTO>> removeItem(
+083:           @PathVariable("itemNo") Long itemNo,
+084:           Principal principal) {
+085: 
+086:     log.info("remove item..............." + itemNo);
+087: 
+088:     String mid = principal.getName();
+089: 
+090:     cartService.checkItemHolder(mid, itemNo);
+091: 
+092:     cartService.modifyItem(
+093:             ModifyCartItemDTO.builder().itemNo(itemNo).quantity(0).build()
+094:     );
+095: 
+096:     List<CartItemDTO> cartList = cartService.getAllItems(mid);
+097: 
+098:     return ResponseEntity.ok(cartList);
+099:   }
+100: 
+101: 
+102: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/cart/controller/advice/CartControllerAdvice.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.controller.advice;
+002: 
+003: 
+004: import org.springframework.http.ResponseEntity;
+005: import org.springframework.web.bind.annotation.ExceptionHandler;
+006: import org.springframework.web.bind.annotation.RestControllerAdvice;
+007: import org.zerock.ex3.cart.exception.CartTaskException;
+008: 
+009: import java.util.Map;
+010: 
+011: @RestControllerAdvice
+012: public class CartControllerAdvice {
+013: 
+014:   @ExceptionHandler(CartTaskException.class)
+015:   public ResponseEntity<Map<String, String >> handleCartTaskException(CartTaskException e){
+016: 
+017:     int status = e.getStatus();
+018:     String message = e.getMessage();
+019: 
+020:     return ResponseEntity.status(status).body(Map.of("error", message));
+021:   }
+022: 
+023: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/cart/service/CartService.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.service;
+002: 
+003: 
+004: import lombok.RequiredArgsConstructor;
+005: import lombok.extern.log4j.Log4j2;
+006: import org.springframework.stereotype.Service;
+007: import org.springframework.transaction.annotation.Transactional;
+008: import org.zerock.ex3.cart.dto.AddCartItemDTO;
+009: import org.zerock.ex3.cart.dto.CartItemDTO;
+010: import org.zerock.ex3.cart.dto.ModifyCartItemDTO;
+011: import org.zerock.ex3.cart.entity.CartEntity;
+012: import org.zerock.ex3.cart.entity.CartItemEntity;
+013: import org.zerock.ex3.cart.exception.CartTaskException;
+014: import org.zerock.ex3.cart.repository.CartItemRepository;
+015: import org.zerock.ex3.cart.repository.CartRepository;
+016: import org.zerock.ex3.product.entity.ProductEntity;
+017: import org.zerock.ex3.product.repository.ProductRepository;
+018: 
+019: import java.util.ArrayList;
+020: import java.util.List;
+021: import java.util.Optional;
+022: 
+023: @Service
+024: @RequiredArgsConstructor
+025: @Log4j2
+026: @Transactional
+027: public class CartService {
+028: 
+029:   private final CartItemRepository cartItemRepository;
+030: 
+031:   private final CartRepository cartRepository;
+032: 
+033:   private final ProductRepository productRepository;
+034: 
+035: 
+036:   @Transactional(readOnly = true)
+037:   public List<CartItemDTO> getAllItems(String mid) {
+038: 
+039:     List<CartItemDTO> itemDTOList = new ArrayList<>();
+040: 
+041:     Optional<List<CartItemEntity>> result = cartItemRepository.getCartItemsOfHolder(mid);
+042: 
+043:     if(result.isEmpty()){
+044:       return itemDTOList;
+045:     }
+046: 
+047:     List<CartItemEntity> cartItemEntityList = result.get();
+048: 
+049:     cartItemEntityList.forEach(cartItemEntity -> {
+050:       itemDTOList.add(entityToDTO(cartItemEntity));
+051:     });
+052: 
+053:     return itemDTOList;
+054:   }
+055: 
+056:   public void registerItem(AddCartItemDTO addCartItemDTO){
+057: 
+058:     String mid = addCartItemDTO.getHolder();
+059:     Long pno = addCartItemDTO.getPno();
+060:     int quantity = addCartItemDTO.getQuantity();
+061: 
+062:     Optional<CartEntity> cartResult = cartRepository.findByHolder(mid);
+063: 
+064:     CartEntity cartEntity = cartResult.orElseGet(() -> {
+065:       CartEntity cart = CartEntity.builder().holder(mid).build();
+066:       return cartRepository.save(cart);
+067:     });
+068: 
+069: 
+070:     ProductEntity productEntity = productRepository.findById(pno)
+071:             .orElseThrow(CartTaskException.Items.NoT_FOUND_PRODUCT::value);
+072: 
+073:     CartItemEntity cartItemEntity = CartItemEntity.builder()
+074:             .cart(cartEntity)
+075:             .product(productEntity)
+076:             .quantity(quantity)
+077:             .build();
+078: 
+079:     try {
+080:       cartItemRepository.save(cartItemEntity);
+081:     }  catch (Exception e) {
+082:       log.error(e.getMessage());
+083:       throw CartTaskException.Items.CART_ITEM_REGISTER_FAIL.value();
+084:     }
+085:   }
+086: 
+087: 
+088:   private CartItemDTO entityToDTO(CartItemEntity cartItemEntity) {
+089:     return CartItemDTO.builder()
+090:             .itemNo(cartItemEntity.getItemNo())
+091:             .pname(cartItemEntity.getProduct().getPname())
+092:             .pno(cartItemEntity.getProduct().getPno())
+093:             .price(cartItemEntity.getProduct().getPrice())
+094:             .image(cartItemEntity.getProduct().getImages().first().getFileName())
+095:             //.image(cartItemEntity.getProduct().getImages().stream().findAny().get().getFileName())
+096:             .quantity(cartItemEntity.getQuantity())
+097:             .build();
+098:   }
+099: 
+100:   public void modifyItem(ModifyCartItemDTO modifyCartItemDTO) {
+101: 
+102:     Long itemNo = modifyCartItemDTO.getItemNo();
+103:     int quantity = modifyCartItemDTO.getQuantity();
+104: 
+105:     Optional<CartItemEntity> result = cartItemRepository.findById(itemNo);
+106: 
+107:     if(result.isEmpty()){
+108:       throw CartTaskException.Items.NOT_FOUND_CARTITEM.value();
+109:     }
+110: 
+111:     CartItemEntity cartItemEntity = result.get();
+112: 
+113:     if(quantity <= 0){
+114:       cartItemRepository.delete(cartItemEntity);
+115:       return;
+116:     }
+117:     cartItemEntity.changeQuantity(quantity);
+118:   }
+119: 
+120: 
+121:   public void checkItemHolder(String holder, Long itemNo) {
+122: 
+123:     Optional<String> result = cartItemRepository.getHolderOfCartItem(itemNo);
+124: 
+125: 
+126:     if(result.isEmpty()){
+127:       throw CartTaskException.Items.NOT_FOUND_CARTITEM.value();
+128:     }
+129: 
+130:     if(!result.get().equals(holder)){
+131:       throw CartTaskException.Items.NOT_CARTITEM_OWNER.value();
+132:     }
+133:   }
+134: 
+135:   public void checkCartHolder(String holder, Long cno) {
+136: 
+137:     CartEntity cartEntity = cartRepository.findByHolder(holder)
+138:             .orElseThrow(CartTaskException.Items.NOT_FOUND_CART::value);
+139: 
+140:     if(!cartEntity.getCno().equals(cno)){
+141:       throw CartTaskException.Items.NOT_FOUND_CART.value();
+142:     }
+143:   }
+144: 
+145: 
+146: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/cart/exception/CartTaskException.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.cart.exception;
+002: 
+003: import lombok.Getter;
+004: import lombok.ToString;
+005: 
+006: @Getter
+007: @ToString
+008: public class CartTaskException extends RuntimeException {
+009: 
+010:   private String message;
+011:   private int status;
+012: 
+013:   public CartTaskException(String message, int status) {
+014:     super(message);
+015:     this.message = message;
+016:     this.status = status;
+017:   }
+018: 
+019:   public static enum Items {
+020: 
+021:     NOT_FOUND_CARTITEM("Cannot find CartItem", 404),
+022:     NOT_FOUND_CART("Cannot find Cart", 404),
+023:     NoT_FOUND_PRODUCT("Cannot find Product", 404),
+024: 
+025:     INVALID_QUANTITY("Invalid Quantity", 400),
+026: 
+027:     DUPLICATE_PRODUCT("Duplicate Product In Cart", 400),
+028: 
+029:     CART_ITEM_REGISTER_FAIL("Cart Register Fail", 500),
+030: 
+031:     CART_ITEM_UPDATE_FAIL("Cart Update Fail", 500),
+032: 
+033:     CART_ITEM_DELETE_FAIL("Cart Delete Fail", 500),
+034: 
+035:     NOT_CARTITEM_OWNER("Not CartItem Owner", 403);
+036: 
+037: 
+038:     private String message;
+039:     private int status;
+040: 
+041:     Items(String message, int status) {
+042:       this.message = message;
+043:       this.status = status;
+044:     }
+045: 
+046:     public CartTaskException value() {
+047:       return new CartTaskException(this.message, this.status);
+048:     }
+049:   }
+050: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/Ex3Application.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3;
+002: 
+003: import org.springframework.boot.SpringApplication;
+004: import org.springframework.boot.autoconfigure.SpringBootApplication;
+005: import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+006: 
+007: @SpringBootApplication
+008: @EnableJpaAuditing
+009: public class Ex3Application {
+010: 
+011:   public static void main(String[] args) {
+012:     SpringApplication.run(Ex3Application.class, args);
+013:   }
+014: 
+015: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/upload/util/UploadUtil.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.upload.util;
+002: import jakarta.annotation.PostConstruct;
+003: import lombok.extern.log4j.Log4j2;
+004: import net.coobird.thumbnailator.Thumbnails;
+005: import org.springframework.beans.factory.annotation.Value;
+006: import org.springframework.stereotype.Component;
+007: import org.springframework.util.FileCopyUtils;
+008: import org.springframework.web.multipart.MultipartFile;
+009: 
+010: import java.io.File;
+011: import java.io.FileOutputStream;
+012: import java.io.InputStream;
+013: import java.io.OutputStream;
+014: import java.util.ArrayList;
+015: import java.util.List;
+016: import java.util.UUID;
+017: 
+018: @Component
+019: @Log4j2
+020: public class UploadUtil {
+021: 
+022: 
+023:   @Value("${org.zerock.upload.path}")
+024:   private String uploadPath;
+025: 
+026:   @PostConstruct
+027:   public void init() {
+028: 
+029:     File tempFolder = new File(uploadPath);
+030: 
+031:     if(tempFolder.exists() == false) {
+032:       tempFolder.mkdir();
+033:     }
+034: 
+035:     uploadPath = tempFolder.getAbsolutePath();
+036: 
+037:     log.info("-------------------------------------");
+038:     log.info(uploadPath);
+039:   }
+040: 
+041:   public List<String> upload(MultipartFile[] files) {
+042: 
+043:     List<String> result = new ArrayList<>();
+044: 
+045:     for (MultipartFile file : files) {
+046:       log.info("-------------------------------");
+047:       log.info("name: " + file.getOriginalFilename());
+048: 
+049:       if(file.getContentType().startsWith("image") == false){
+050:         log.error("File type not supported: " + file.getContentType());
+051:         continue;
+052:       }
+053: 
+054:       String uuid = UUID.randomUUID().toString();
+055: 
+056:       String saveFileName = uuid + "_" + file.getOriginalFilename();
+057: 
+058:       try (InputStream in = file.getInputStream();
+059:            OutputStream out = new FileOutputStream(uploadPath + File.separator + saveFileName)
+060:       ) {
+061: 
+062:         FileCopyUtils.copy(in, out);
+063: 
+064:         Thumbnails.of( new File(uploadPath+ File.separator+saveFileName))
+065:                 .size(200,200)
+066:                 .toFile(uploadPath+File.separator+"s_"+saveFileName);
+067: 
+068: 
+069:         result.add(saveFileName);
+070: 
+071:       } catch (Exception e) {
+072:         log.error(e.getMessage());
+073:       }//end catch
+074:     }
+075:     return result;
+076:   }
+077: 
+078:   public void deleteFile(String fileName) {
+079:     File file = new File(uploadPath + File.separator + fileName);
+080:     File thumbFile = new File(uploadPath + File.separator + "s_" + fileName);
+081: 
+082:     try{
+083:       if(file.exists()) {
+084:         file.delete();
+085:       }
+086: 
+087:       if(thumbFile.exists()) {
+088:         thumbFile.delete();
+089:       }
+090:     }catch(Exception e) {
+091:       log.error(e.getMessage());
+092:     }
+093: 
+094:   }
+095: 
+096: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/upload/controller/advice/FileControllerAdvice.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.upload.controller.advice;
+002: 
+003: import org.springframework.http.ResponseEntity;
+004: import org.springframework.web.bind.annotation.ExceptionHandler;
+005: import org.springframework.web.bind.annotation.RestControllerAdvice;
+006: import org.springframework.web.multipart.MaxUploadSizeExceededException;
+007: import org.zerock.ex3.upload.exception.UploadNotSupportedException;
+008: 
+009: import java.util.Map;
+010: 
+011: @RestControllerAdvice
+012: public class FileControllerAdvice {
+013: 
+014:   @ExceptionHandler(MaxUploadSizeExceededException.class)
+015:   public ResponseEntity<?> handleMaxSizeException(MaxUploadSizeExceededException exception) {
+016:     return ResponseEntity.badRequest().body( Map.of("error","File too large"));
+017:   }
+018: 
+019:   @ExceptionHandler(UploadNotSupportedException.class)
+020:   public ResponseEntity<Map<String, String>> handleUploadNotSupportedException(UploadNotSupportedException exception) {
+021:     return ResponseEntity.badRequest().body(Map.of("error", exception.getMessage()));
+022:   }
+023: 
+024: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/upload/controller/FileController.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.upload.controller;
+002: 
+003: 
+004: import lombok.RequiredArgsConstructor;
+005: import lombok.extern.log4j.Log4j2;
+006: import org.springframework.http.ResponseEntity;
+007: import org.springframework.web.bind.annotation.*;
+008: 
+009: import org.springframework.web.multipart.MultipartFile;
+010: import org.zerock.ex3.upload.exception.UploadNotSupportedException;
+011: import org.zerock.ex3.upload.util.UploadUtil;
+012: 
+013: 
+014: import java.util.List;
+015: 
+016: @RestController
+017: @Log4j2
+018: @RequiredArgsConstructor
+019: @RequestMapping("/api/v1/files")
+020: public class FileController {
+021: 
+022:   private final UploadUtil uploadUtil;
+023: 
+024:   @PostMapping("/upload")
+025:   public ResponseEntity<List<String>> uploadFile( @RequestParam("files") MultipartFile[] files) {
+026: 
+027:     log.info("upload file....");
+028: 
+029:     if(files == null || files.length == 0) {
+030:       throw new UploadNotSupportedException("No files to upload");
+031:     }
+032: 
+033:     for (MultipartFile file : files) {
+034:       log.info("-------------------------------");
+035:       log.info("name: " + file.getOriginalFilename());
+036:       checkFileType(file.getOriginalFilename());
+037: 
+038:       if(file.getContentType().startsWith("image") == false){
+039:         throw new UploadNotSupportedException("File type not supported: " + file.getContentType());
+040:       }
+041:     }
+042: 
+043:     List<String> result = uploadUtil.upload(files);
+044: 
+045: 
+046:     return ResponseEntity.ok(result);
+047:   }
+048: 
+049:   private void checkFileType(String fileName) throws UploadNotSupportedException{
+050:     //jpg,gif,png,bmp
+051:     String suffix = fileName.substring(fileName.lastIndexOf(".")+1);
+052: 
+053:     String regExp = "^(jpg|jpeg|JPG|JPEG|png|PNG|gif|GIF|bmp|BMP)";
+054: 
+055:     if(!suffix.matches(regExp)){
+056:       throw new UploadNotSupportedException("File type not supported: " + suffix);
+057:     }
+058: 
+059:   }
+060: 
+061:   @DeleteMapping("/delete/{fileName}")
+062:   public ResponseEntity<Void> deleteFile(@PathVariable(name = "fileName") String fileName) {
+063:     log.info("delete file: " + fileName);
+064: 
+065:     uploadUtil.deleteFile(fileName);
+066: 
+067: 
+068:     return ResponseEntity.ok().build();
+069:   }
+070: 
+071: 
+072: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/upload/exception/UploadNotSupportedException.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.upload.exception;
+002: 
+003: public class UploadNotSupportedException extends RuntimeException{
+004: 
+005:   public UploadNotSupportedException(String message) {
+006:     super(message);
+007:   }
+008: }
+  </xmp></div></div>
+<script>
+
+</script>
+
+<script>
+
+    const arr = document.querySelectorAll(".file")
+    const mainArr = document.querySelectorAll(".main")
+    let before = null
+
+    for (const arrElement of arr) {
+
+        arrElement.addEventListener("click", e => {
+
+            const target = arrElement.closest(".file").querySelector(".main")
+            console.log(before)
+
+            if(target.classList.contains('show')) {
+                target.classList.remove("show")
+                return
+            }
+
+            if(before) {
+                before.classList.remove("show")
+            }
+            target.classList.add("show")
+            before = target
+
+        }, false)
+
+    }
+
+
+</script>
+
+</body></html>

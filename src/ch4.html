@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<style>
+.main {
+    display: none;
+}
+.show {
+    display: block;
+}
+
+.title {
+    font-weight: bold;
+    font-size: 16px;
+    background-color: honeydew;
+}
+
+.file {
+    margin: 0.1em;
+    padding: 0.1em;
+    font-weight: bold;
+    background-color: lightcoral;
+}
+</style>
+
+<script>
+
+</script>
+
+<script>
+
+    const arr = document.querySelectorAll(".file")
+    const mainArr = document.querySelectorAll(".main")
+    let before = null
+
+    for (const arrElement of arr) {
+
+        arrElement.addEventListener("click", e => {
+
+            const target = arrElement.closest(".file").querySelector(".main")
+            console.log(before)
+
+            if(target.classList.contains('show')) {
+                target.classList.remove("show")
+                return
+            }
+
+            if(before) {
+                before.classList.remove("show")
+            }
+            target.classList.add("show")
+            before = target
+
+        }, false)
+
+    }
+
+
+</script>
+
+</body></html>

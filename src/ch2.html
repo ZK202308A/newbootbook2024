@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<style>
+.main {
+    display: none;
+}
+.show {
+    display: block;
+}
+
+.title {
+    font-weight: bold;
+    font-size: 16px;
+    background-color: honeydew;
+}
+
+.file {
+    margin: 0.1em;
+    padding: 0.1em;
+    font-weight: bold;
+    background-color: lightcoral;
+}
+</style>
+
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex1/Ex1ApplicationTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex1;
+002: 
+003: import org.junit.jupiter.api.Test;
+004: import org.springframework.boot.test.context.SpringBootTest;
+005: 
+006: @SpringBootTest
+007: class Ex1ApplicationTests {
+008: 
+009:     @Test
+010:     void contextLoads() {
+011:     }
+012: 
+013: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex1/sample/SampleControllerTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex1.sample;
+002: 
+003: 
+004: import lombok.extern.log4j.Log4j2;
+005: import org.junit.jupiter.api.Test;
+006: import org.springframework.beans.factory.annotation.Autowired;
+007: import org.springframework.boot.test.context.SpringBootTest;
+008: import org.springframework.boot.test.web.client.TestRestTemplate;
+009: 
+010: import java.util.Arrays;
+011: 
+012: 
+013: @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+014: @Log4j2
+015: public class SampleControllerTests {
+016: 
+017:     @Autowired(required = false)
+018:     private TestRestTemplate testRestTemplate;
+019: 
+020:     @Test
+021:     public void testHello() {
+022: 
+023:         String[] result = testRestTemplate.getForObject(
+024:                 "/api/v1/sample/hello",
+025:                 String[].class);
+026: 
+027:         log.info(Arrays.toString(result));
+028: 
+029:     }
+030: }
+031: 
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex1/Ex1Application.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex1;
+002: 
+003: import org.springframework.boot.SpringApplication;
+004: import org.springframework.boot.autoconfigure.SpringBootApplication;
+005: 
+006: @SpringBootApplication
+007: public class Ex1Application {
+008: 
+009:     public static void main(String[] args) {
+010:         SpringApplication.run(Ex1Application.class, args);
+011:     }
+012: 
+013: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex1/sample/dto/SampleDTO.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex1.sample.dto;
+002: 
+003: import lombok.AllArgsConstructor;
+004: import lombok.Builder;
+005: import lombok.Data;
+006: import lombok.NoArgsConstructor;
+007: 
+008: @Data
+009: @Builder
+010: @AllArgsConstructor
+011: @NoArgsConstructor
+012: public class SampleDTO {
+013: 
+014:     private Long ssn;
+015:     private String name;
+016: 
+017: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex1/sample/controller/SampleController.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex1.sample.controller;
+002: 
+003: 
+004: import lombok.RequiredArgsConstructor;
+005: import lombok.extern.log4j.Log4j2;
+006: import org.springframework.web.bind.annotation.RequestMapping;
+007: import org.springframework.web.bind.annotation.RestController;
+008: import org.zerock.ex1.sample.service.SampleService;
+009: 
+010: @RestController
+011: @RequestMapping("/api/v1/sample")
+012: @Log4j2
+013: @RequiredArgsConstructor
+014: public class SampleController {
+015: 
+016:     private final SampleService sampleService;
+017: 
+018:     @RequestMapping("/hello")
+019:     public String[] hello() {
+020: 
+021:         return new String[]{"Hello", "World"};
+022: 
+023:     }
+024: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex1/sample/service/SampleService.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex1.sample.service;
+002: 
+003: 
+004: import org.springframework.stereotype.Service;
+005: 
+006: @Service
+007: public class SampleService {
+008: 
+009: }
+  </xmp></div></div>
+<script>
+
+</script>
+
+<script>
+
+    const arr = document.querySelectorAll(".file")
+    const mainArr = document.querySelectorAll(".main")
+    let before = null
+
+    for (const arrElement of arr) {
+
+        arrElement.addEventListener("click", e => {
+
+            const target = arrElement.closest(".file").querySelector(".main")
+            console.log(before)
+
+            if(target.classList.contains('show')) {
+                target.classList.remove("show")
+                return
+            }
+
+            if(before) {
+                before.classList.remove("show")
+            }
+            target.classList.add("show")
+            before = target
+
+        }, false)
+
+    }
+
+
+</script>
+
+</body></html>

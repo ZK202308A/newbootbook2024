@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<style>
+.main {
+    display: none;
+}
+.show {
+    display: block;
+}
+
+.title {
+    font-weight: bold;
+    font-size: 16px;
+    background-color: honeydew;
+}
+
+.file {
+    margin: 0.1em;
+    padding: 0.1em;
+    font-weight: bold;
+    background-color: lightcoral;
+}
+</style>
+
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex2/repository/TodoRepositoryTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex2.repository;
+002: 
+003: import org.junit.jupiter.api.Test;
+004: import org.springframework.beans.factory.annotation.Autowired;
+005: import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+006: import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+007: import org.springframework.data.domain.Page;
+008: import org.springframework.data.domain.PageRequest;
+009: import org.springframework.data.domain.Pageable;
+010: import org.springframework.data.domain.Sort;
+011: import org.springframework.test.annotation.Commit;
+012: import org.springframework.transaction.annotation.Propagation;
+013: import org.springframework.transaction.annotation.Transactional;
+014: import org.zerock.ex2.dto.TodoDTO;
+015: import org.zerock.ex2.entity.TodoEntity;
+016: 
+017: import java.time.LocalDate;
+018: import java.util.Optional;
+019: 
+020: @DataJpaTest
+021: @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+022: @Transactional(propagation = Propagation.NOT_SUPPORTED)
+023: public class TodoRepositoryTests {
+024: 
+025:     @Autowired
+026:     private TodoRepository todoRepository;
+027: 
+028:     @Test
+029:     public void testInsert() {
+030:         TodoEntity todoEntity = TodoEntity.builder()
+031:                 .title("부트 끝내기 ")
+032:                 .writer("user00")
+033:                 .dueDate(LocalDate.of(2025, 12, 23))
+034:                 .build();
+035: 
+036:         todoRepository.save(todoEntity);
+037: 
+038:         System.out.println("New TodoEntity MNO: " + todoEntity.getMno());
+039: 
+040:     }
+041: 
+042:     @Test
+043:     public void testInsertDummies() {
+044: 
+045:         for (int i = 0; i < 100; i++) {
+046:             TodoEntity todoEntity = TodoEntity.builder()
+047:                     .title("Test Todo..." + i)
+048:                     .writer("tester" + i)
+049:                     .dueDate(LocalDate.of(2025, 11, 30))
+050:                     .build();
+051: 
+052:             todoRepository.save(todoEntity);
+053:             System.out.println("New TodoEntity MNO: " + todoEntity.getMno());
+054:         }//end for
+055:     }
+056: 
+057:     @Test
+058:     public void testRead() {
+059:         Long mno = 58L;
+060: 
+061:         Optional<TodoEntity> result = todoRepository.findById(mno);
+062: 
+063:         result.ifPresent(todoEntity -> {
+064:             System.out.println(todoEntity);
+065:         });
+066:     }
+067: 
+068:     @Transactional
+069:     @Test
+070:     public void testRead2() {
+071:         Long mno = 55L;
+072: 
+073:         Optional<TodoEntity> result = todoRepository.findById(mno);
+074: 
+075:         result.ifPresent(todoEntity -> {
+076:             System.out.println(todoEntity);
+077:         });
+078: 
+079:         Optional<TodoEntity> result2 = todoRepository.findById(mno);
+080: 
+081:         result2.ifPresent(todoEntity -> {
+082:             System.out.println(todoEntity);
+083:         });
+084:     }
+085: 
+086:     @Test
+087:     @Transactional
+088:     @Commit
+089:     public void testUpdateDirtyCheck() {
+090: 
+091:         Long mno = 58L;
+092: 
+093:         //동일 트랜잭션 내에서 처리되고 있는 영속 상태의 엔티티 객체
+094:         Optional<TodoEntity> result = todoRepository.findById(mno);
+095: 
+096:         TodoEntity todoEntity = result.get();
+097: 
+098:         System.out.println("OLD : " + todoEntity);
+099: 
+100:         todoEntity.changeTitle("Change Title..." + Math.random());
+101:         todoEntity.changeWriter("Change Wriiter" + Math.random());
+102: 
+103:         System.out.println("Changed :" + todoEntity);
+104: 
+105:     }
+106: 
+107:     @Test
+108:     @Commit
+109:     public void testUpdateDetached() {
+110:         Long mno = 58L;
+111: 
+112:         //동일 트랜잭션 내에서 처리되고 있는 영속 상태의 엔티티 객체
+113:         Optional<TodoEntity> result = todoRepository.findById(mno);
+114: 
+115:         TodoEntity todoEntity = result.get();
+116: 
+117:         System.out.println("OLD : " + todoEntity);
+118: 
+119:         todoEntity.changeTitle("Change Title..." + Math.random());
+120:         todoEntity.changeWriter("Change Writer.." + Math.random());
+121:         System.out.println("Changed :" + todoEntity);
+122: 
+123:         //save( )하지 않으면 update 되지 않음
+124:         //todoRepository.save(todoEntity);
+125:     }
+126: 
+127: 
+128:     @Test
+129:     @Transactional
+130:     @Commit
+131:     public void testDeleteById() {
+132: 
+133:         //삭제하기 전에 확인
+134:         Long mno = 100L;
+135: 
+136:         todoRepository.deleteById(mno);
+137: 
+138:     }
+139: 
+140: 
+141: 
+142:     @Test
+143:     public void testPaging() {
+144: 
+145:         Pageable pageable = PageRequest.of(0, 10, Sort.by("mno").descending());
+146: 
+147:         Page<TodoEntity> result = todoRepository.findAll(pageable);
+148: 
+149:         System.out.println(result.getTotalPages());
+150: 
+151:         System.out.println(result.getTotalElements());
+152: 
+153:         java.util.List<TodoEntity> todoEntityList = result.getContent();
+154: 
+155:         todoEntityList.forEach(todoEntity -> {
+156:             System.out.println(todoEntity);
+157:         });
+158:     }
+159: 
+160:     @Test
+161:     public void testListAll() {
+162: 
+163:         Pageable pageable = PageRequest.of(0, 10, Sort.by("mno").descending());
+164: 
+165:         Page<TodoEntity> result = todoRepository.listAll(pageable);
+166: 
+167:         System.out.println(result.getContent());
+168: 
+169:     }
+170: 
+171: //    @Test
+172: //    public void testSearch1(){
+173: //
+174: //        Pageable pageable = PageRequest.of(0, 10, Sort.by("mno").descending());
+175: //
+176: //        Page<TodoEntity> result = todoRepository.search1(pageable);
+177: //
+178: //    }
+179: 
+180:     @Test
+181:     public void testSearch1(){
+182: 
+183:         Pageable pageable = PageRequest.of(0, 10, Sort.by("mno").descending());
+184: 
+185:         Page<TodoEntity> result = todoRepository.search1(pageable);
+186: 
+187:         System.out.println(result.getTotalPages());
+188: 
+189:         System.out.println(result.getTotalElements());
+190: 
+191:         java.util.List<TodoEntity> todoEntityList = result.getContent();
+192: 
+193:         todoEntityList.forEach(todoEntity -> {
+194:             System.out.println(todoEntity);
+195:         });
+196:     }
+197: 
+198:     @Test
+199:     public void testGetTodoDTO() {
+200: 
+201:         Long mno = 59L;
+202: 
+203:         Optional<TodoDTO> result = todoRepository.getDTO(mno);
+204: 
+205:         result.ifPresent(todoDTO -> {
+206:             System.out.println(todoDTO);
+207:         });
+208:     }
+209: 
+210: 
+211:     @Test
+212:     public void testSearchDTO(){
+213: 
+214:         Pageable pageable = PageRequest.of(0, 10, Sort.by("mno").descending());
+215: 
+216:         Page<TodoDTO> result = todoRepository.searchDTO(pageable);
+217: 
+218:         System.out.println(result.getTotalPages());
+219: 
+220:         System.out.println(result.getTotalElements());
+221: 
+222:         java.util.List<TodoDTO> dtoList = result.getContent();
+223: 
+224:         dtoList.forEach(todoDTO -> {
+225:             System.out.println(todoDTO);
+226:         });
+227: 
+228:     }
+229: 
+230: 
+231: 
+232: 
+233: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex2/Ex2ApplicationTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex2;
+002: 
+003: import org.junit.jupiter.api.Test;
+004: import org.springframework.boot.test.context.SpringBootTest;
+005: 
+006: @SpringBootTest
+007: class Ex2ApplicationTests {
+008: 
+009:     @Test
+010:     void contextLoads() {
+011:     }
+012: 
+013: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex2/dto/TodoDTO.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex2.dto;
+002: 
+003: import lombok.Data;
+004: import lombok.NoArgsConstructor;
+005: import org.zerock.ex2.entity.TodoEntity;
+006: 
+007: import java.time.LocalDate;
+008: 
+009: 
+010: @Data
+011: @NoArgsConstructor
+012: public class TodoDTO {
+013: 
+014:     private Long mno;
+015: 
+016:     private String title;
+017: 
+018:     private String writer;
+019: 
+020:     private LocalDate dueDate;
+021: 
+022:     public TodoDTO(TodoEntity todoEntity){
+023:         this.mno = todoEntity.getMno();
+024:         this.title = todoEntity.getTitle();
+025:         this.writer = todoEntity.getWriter();
+026:         this.dueDate = todoEntity.getDueDate();
+027:     }
+028: 
+029: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex2/repository/search/TodoSearch.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex2.repository.search;
+002: 
+003: import org.springframework.data.domain.Page;
+004: import org.springframework.data.domain.Pageable;
+005: import org.zerock.ex2.dto.TodoDTO;
+006: import org.zerock.ex2.entity.TodoEntity;
+007: 
+008: public interface TodoSearch {
+009: 
+010:     Page<TodoEntity> search1(Pageable pageable);
+011: 
+012:     Page<TodoDTO> searchDTO(Pageable pageable);
+013: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex2/repository/search/TodoSearchImpl.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex2.repository.search;
+002: 
+003: import com.querydsl.core.types.Projections;
+004: import com.querydsl.jpa.JPQLQuery;
+005: import lombok.extern.log4j.Log4j2;
+006: import org.springframework.data.domain.Page;
+007: import org.springframework.data.domain.PageImpl;
+008: import org.springframework.data.domain.Pageable;
+009: import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
+010: import org.zerock.ex2.dto.TodoDTO;
+011: import org.zerock.ex2.entity.QTodoEntity;
+012: import org.zerock.ex2.entity.TodoEntity;
+013: 
+014: 
+015: @Log4j2
+016: public class TodoSearchImpl extends QuerydslRepositorySupport implements TodoSearch{
+017: 
+018:     public TodoSearchImpl() {
+019:         super(TodoEntity.class);
+020:     }
+021: 
+022:     @Override
+023:     public Page<TodoEntity> search1(Pageable pageable) {
+024: 
+025:         log.info("search1............");
+026: 
+027:         QTodoEntity todoEntity = QTodoEntity.todoEntity;
+028: 
+029:         JPQLQuery<TodoEntity> query = from(todoEntity);
+030: 
+031:         query.where(todoEntity.mno.gt(0L));
+032: 
+033:         getQuerydsl().applyPagination(pageable, query);
+034: 
+035:         java.util.List<TodoEntity> entityList = query.fetch();
+036: 
+037:         long count = query.fetchCount();
+038: 
+039:         return new org.springframework.data.domain.PageImpl<>(entityList, pageable, count);
+040: 
+041: 
+042:     }
+043: 
+044:     @Override
+045:     public Page<TodoDTO> searchDTO(Pageable pageable) {
+046: 
+047:         QTodoEntity todoEntity = QTodoEntity.todoEntity;
+048: 
+049:         JPQLQuery<TodoEntity> query = from(todoEntity);
+050: 
+051:         query.where(todoEntity.mno.gt(0L));
+052: 
+053:         getQuerydsl().applyPagination(pageable, query);
+054: 
+055:         JPQLQuery<TodoDTO> dtoQuery =
+056:                 query.select(Projections.constructor(TodoDTO.class, todoEntity));
+057: 
+058:         java.util.List<TodoDTO> dtoList = dtoQuery.fetch();
+059: 
+060:         long count = dtoQuery.fetchCount();
+061: 
+062:         return new PageImpl<>(dtoList, pageable, count);
+063:     }
+064: 
+065: 
+066: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex2/repository/TodoRepository.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex2.repository;
+002: 
+003: import org.springframework.data.domain.Page;
+004: import org.springframework.data.domain.Pageable;
+005: import org.springframework.data.jpa.repository.JpaRepository;
+006: import org.springframework.data.jpa.repository.Query;
+007: import org.springframework.data.repository.query.Param;
+008: import org.zerock.ex2.dto.TodoDTO;
+009: import org.zerock.ex2.entity.TodoEntity;
+010: import org.zerock.ex2.repository.search.TodoSearch;
+011: 
+012: import java.util.Optional;
+013: 
+014: public interface TodoRepository extends JpaRepository<TodoEntity, Long> , TodoSearch {
+015: 
+016:     @Query("select t from TodoEntity t ")
+017:     Page<TodoEntity> listAll(Pageable pageable);
+018: 
+019: //    @Query(
+020: //            value = "select * from tbl_todos t " ,
+021: //            countQuery = " select count(*) from tbl_todos ",
+022: //            nativeQuery = true
+023: //    )
+024: //    Page<TodoEntity> listAll(Pageable pageable);
+025: 
+026:     @Query("select t from TodoEntity t where t.mno = :mno")
+027:     Optional<TodoDTO> getDTO(@Param("mno") Long mno);
+028: 
+029: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex2/entity/TodoEntity.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex2.entity;
+002: 
+003: import jakarta.persistence.*;
+004: import lombok.*;
+005: import java.time.LocalDate;
+006: 
+007: @Entity
+008: @Getter
+009: @ToString
+010: @AllArgsConstructor
+011: @NoArgsConstructor
+012: @Table(name = "tbl_todos")
+013: @Builder
+014: 
+015: public class TodoEntity {
+016: 
+017: 
+018:     @Id
+019:     @GeneratedValue(strategy = GenerationType.IDENTITY)
+020:     private Long mno;
+021: 
+022:     @Column(length = 500, nullable = false)
+023:     private String title;
+024: 
+025:     @Column(length = 500, nullable = false)
+026:     private String writer;
+027: 
+028:     private LocalDate dueDate;
+029: 
+030:     public void changeTitle(String title) {
+031:         this.title = title;
+032:     }
+033: 
+034:     public void changeWriter(String writer) {
+035:         this.writer = writer;
+036:     }
+037: 
+038:     public void changeDueDate(LocalDate dueDate) {
+039:         this.dueDate = dueDate;
+040:     }
+041: 
+042: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex2/Ex2Application.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex2;
+002: 
+003: import org.springframework.boot.SpringApplication;
+004: import org.springframework.boot.autoconfigure.SpringBootApplication;
+005: 
+006: @SpringBootApplication
+007: public class Ex2Application {
+008: 
+009:     public static void main(String[] args) {
+010:         SpringApplication.run(Ex2Application.class, args);
+011:     }
+012: 
+013: }
+  </xmp></div></div>
+<script>
+
+</script>
+
+<script>
+
+    const arr = document.querySelectorAll(".file")
+    const mainArr = document.querySelectorAll(".main")
+    let before = null
+
+    for (const arrElement of arr) {
+
+        arrElement.addEventListener("click", e => {
+
+            const target = arrElement.closest(".file").querySelector(".main")
+            console.log(before)
+
+            if(target.classList.contains('show')) {
+                target.classList.remove("show")
+                return
+            }
+
+            if(before) {
+                before.classList.remove("show")
+            }
+            target.classList.add("show")
+            before = target
+
+        }, false)
+
+    }
+
+
+</script>
+
+</body></html>

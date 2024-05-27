@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<style>
+.main {
+    display: none;
+}
+.show {
+    display: block;
+}
+
+.title {
+    font-weight: bold;
+    font-size: 16px;
+    background-color: honeydew;
+}
+
+.file {
+    margin: 0.1em;
+    padding: 0.1em;
+    font-weight: bold;
+    background-color: lightcoral;
+}
+</style>
+
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex3/Ex3ApplicationTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3;
+002: 
+003: import org.junit.jupiter.api.Test;
+004: import org.springframework.boot.test.context.SpringBootTest;
+005: 
+006: @SpringBootTest
+007: class Ex3ApplicationTests {
+008: 
+009:   @Test
+010:   void contextLoads() {
+011:   }
+012: 
+013: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/test/java/org/zerock/ex3/member/repository/MemberRepositoryTests.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.repository;
+002: 
+003: 
+004: import org.junit.jupiter.api.Test;
+005: import org.springframework.beans.factory.annotation.Autowired;
+006: import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+007: import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+008: import org.springframework.boot.test.context.SpringBootTest;
+009: import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+010: import org.springframework.security.crypto.password.PasswordEncoder;
+011: import org.springframework.test.annotation.Commit;
+012: import org.springframework.transaction.annotation.Propagation;
+013: import org.springframework.transaction.annotation.Transactional;
+014: import org.zerock.ex3.member.entity.MemberEntity;
+015: import org.zerock.ex3.member.exception.MemberExceptions;
+016: 
+017: 
+018: import java.util.Optional;
+019: 
+020: @SpringBootTest
+021: 
+022: public class MemberRepositoryTests {
+023: 
+024:   @Autowired
+025:   private MemberRepository memberRepository;
+026: 
+027:   @Autowired
+028:   private PasswordEncoder passwordEncoder;
+029: 
+030: 
+031:   @Test
+032:   public void testInsert() {
+033: 
+034:     for (int i = 1; i <=  100; i++) {
+035: 
+036:       MemberEntity memberEntity = MemberEntity.builder()
+037:               .mid("user"+i)
+038:               .mpw(passwordEncoder.encode("1111"))
+039:               .mname("USER"+i)
+040:               .email("user"+i+"@aaa.com")
+041:               .role( i <= 80 ? "USER": "ADMIN")
+042:               .build();
+043: 
+044: 
+045:       memberRepository.save(memberEntity);
+046: 
+047:     }//end for
+048: 
+049:   }
+050: 
+051:   @Test
+052:   public void testRead() {
+053: 
+054:     String mid = "user1";
+055: 
+056:     Optional<MemberEntity> result = memberRepository.findById(mid);
+057: 
+058:     MemberEntity memberEntity =
+059:             result.orElseThrow(MemberExceptions.NOT_FOUND::get);
+060: 
+061:     System.out.println(memberEntity);
+062:   }
+063: 
+064:   @Test
+065:   @Transactional
+066:   @Commit
+067:   public void testUpdate() {
+068:     String mid = "user1";
+069: 
+070:     Optional<MemberEntity> result = memberRepository.findById(mid);
+071: 
+072:     MemberEntity memberEntity =
+073:             result.orElseThrow(MemberExceptions.NOT_FOUND::get);
+074: 
+075:     memberEntity.changePassword(passwordEncoder.encode("2222"));
+076:     memberEntity.changeName("USER1-1");
+077: 
+078:   }
+079: 
+080:   @Test
+081:   @Transactional
+082:   @Commit
+083:   public void testDelete() {
+084: 
+085:     String mid = "user1";
+086: 
+087:     Optional<MemberEntity> result = memberRepository.findById(mid);
+088: 
+089:     MemberEntity memberEntity =
+090:             result.orElseThrow(() -> MemberExceptions.NOT_FOUND.get());
+091: 
+092:     memberRepository.delete(memberEntity);
+093:   }
+094: 
+095: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/config/CustomSecurityConfig.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.config;
+002: 
+003: 
+004: import lombok.extern.log4j.Log4j2;
+005: import org.springframework.beans.factory.annotation.Autowired;
+006: import org.springframework.context.annotation.Bean;
+007: import org.springframework.context.annotation.Configuration;
+008: import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+009: import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+010: import org.springframework.security.config.http.SessionCreationPolicy;
+011: import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+012: import org.springframework.security.crypto.password.PasswordEncoder;
+013: import org.springframework.security.web.SecurityFilterChain;
+014: import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+015: import org.springframework.web.cors.CorsConfiguration;
+016: import org.springframework.web.cors.CorsConfigurationSource;
+017: import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+018: import org.zerock.ex3.member.security.filter.JWTCheckFilter;
+019: 
+020: import java.util.List;
+021: 
+022: @Configuration
+023: @Log4j2
+024: @EnableMethodSecurity
+025: public class CustomSecurityConfig {
+026: 
+027: 
+028:   private JWTCheckFilter jwtCheckFilter;
+029: 
+030:   @Autowired
+031:   private void setJwtCheckFilter(JWTCheckFilter jwtCheckFilter) {
+032:     this.jwtCheckFilter = jwtCheckFilter;
+033:   }
+034: 
+035: 
+036:   @Bean
+037:   public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+038: 
+039:     log.info("filter chain............");
+040: 
+041:     httpSecurity.formLogin(httpSecurityFormLoginConfigurer -> {
+042:       httpSecurityFormLoginConfigurer.disable();
+043: 
+044:     });
+045: 
+046:     httpSecurity.logout( config -> config.disable());
+047: 
+048:     httpSecurity.csrf(config -> { config.disable();});
+049: 
+050:     httpSecurity.sessionManagement(sessionManagementConfigurer -> {
+051:       sessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.NEVER);
+052:     });
+053: 
+054:     httpSecurity.addFilterBefore(jwtCheckFilter, UsernamePasswordAuthenticationFilter.class);
+055: 
+056:     httpSecurity.cors(cors -> {
+057:       cors.configurationSource(corsConfigurationSource());
+058:     });
+059: 
+060:     return httpSecurity.build();
+061:   }
+062: 
+063:   @Bean
+064:   public PasswordEncoder passwordEncoder() {
+065:     return new BCryptPasswordEncoder();
+066:   }
+067: 
+068:   @Bean
+069:   public CorsConfigurationSource corsConfigurationSource() {
+070: 
+071:     CorsConfiguration corsConfiguration = new CorsConfiguration();
+072: 
+073:     corsConfiguration.setAllowedOriginPatterns(List.of("*")); // 어디서든 허락
+074:     corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"));
+075:     corsConfiguration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
+076:     corsConfiguration.setAllowCredentials(true);
+077: 
+078:     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+079:     source.registerCorsConfiguration("/**", corsConfiguration);
+080: 
+081:     return source;
+082:   }
+083: 
+084: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/dto/MemberDTO.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.dto;
+002: 
+003: 
+004: import lombok.*;
+005: import org.zerock.ex3.member.entity.MemberEntity;
+006: 
+007: import java.time.LocalDateTime;
+008: import java.util.HashMap;
+009: import java.util.Map;
+010: 
+011: 
+012: @Data
+013: @Builder
+014: @AllArgsConstructor
+015: @NoArgsConstructor
+016: @ToString
+017: public class MemberDTO  {
+018: 
+019:   private String mid;
+020:   private String mpw;
+021:   private String mname;
+022:   private String email;
+023:   private LocalDateTime joinDate;
+024:   private LocalDateTime modifiedDate;
+025:   private String role;
+026: 
+027: 
+028:   public Map<String, Object> getDataMap() {
+029:     Map<String, Object> map = new HashMap<>();
+030:     map.put("mid", mid);
+031:     map.put("mname", mname);
+032:     map.put("email", email);
+033:     map.put("role", role);
+034:     return map;
+035:   }
+036: 
+037:   public MemberDTO(MemberEntity memberEntity){
+038:     this.mid = memberEntity.getMid();
+039:     this.mpw = memberEntity.getMpw();
+040:     this.mname = memberEntity.getMname();
+041:     this.email = memberEntity.getEmail();
+042:     this.joinDate = memberEntity.getJoinDate();
+043:     this.modifiedDate = memberEntity.getModifiedDate();
+044:     this.role = memberEntity.getRole();
+045:   }
+046: 
+047: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/repository/MemberRepository.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.repository;
+002: 
+003: import org.springframework.data.jpa.repository.JpaRepository;
+004: import org.zerock.ex3.member.entity.MemberEntity;
+005: 
+006: public interface MemberRepository extends JpaRepository<MemberEntity, String> {
+007: 
+008: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/security/util/JWTUtil.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.security.util;
+002: 
+003: import io.jsonwebtoken.*;
+004: import io.jsonwebtoken.security.Keys;
+005: import lombok.extern.log4j.Log4j2;
+006: import org.springframework.stereotype.Component;
+007: 
+008: import javax.crypto.SecretKey;
+009: import java.time.ZonedDateTime;
+010: import java.util.Date;
+011: import java.util.Map;
+012: 
+013: @Component
+014: @Log4j2
+015: public class JWTUtil {
+016:   private static String key = "1234567890123456789012345678901234567890";
+017: 
+018:   public String createToken(Map<String, Object> valueMap, int min) {
+019: 
+020:     SecretKey key = null;
+021: 
+022:     try {
+023:       key = Keys.hmacShaKeyFor(JWTUtil.key.getBytes("UTF-8"));
+024: 
+025:     } catch (Exception e) {
+026:       throw new RuntimeException(e.getMessage());
+027:     }
+028: 
+029:     return Jwts.builder().header()
+030:             .add("typ", "JWT")
+031:             .add("alg", "HS256")
+032:             .and()
+033:             .issuedAt(Date.from(ZonedDateTime.now().toInstant()))
+034:             .expiration((Date.from(ZonedDateTime.now()
+035:                     .plusMinutes(min).toInstant()))).claims(valueMap)
+036:             .signWith(key)
+037:             .compact();
+038: 
+039:   }
+040: 
+041:   public Map<String, Object> validateToken(String token) {
+042: 
+043:     SecretKey key = null;
+044: 
+045:     try {
+046:       key = Keys.hmacShaKeyFor(JWTUtil.key.getBytes("UTF-8"));
+047: 
+048:     } catch (Exception e) {
+049:       throw new RuntimeException(e.getMessage());
+050:     }
+051: 
+052:     Claims claims = Jwts.parser().verifyWith(key)
+053:             .build()
+054:             .parseSignedClaims(token)
+055:             .getPayload();
+056: 
+057:     log.info("claims: " + claims);
+058: 
+059:     return claims;
+060: 
+061:   }
+062: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/security/auth/CustomUserPrincipal.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.security.auth;
+002: 
+003: import lombok.RequiredArgsConstructor;
+004: 
+005: import java.security.Principal;
+006: 
+007: 
+008: @RequiredArgsConstructor
+009: public class CustomUserPrincipal implements Principal {
+010: 
+011:   private final String mid;
+012: 
+013:   @Override
+014:   public String getName() {
+015:     return mid;
+016:   }
+017: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/security/filter/JWTCheckFilter.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.security.filter;
+002: 
+003: 
+004: import jakarta.servlet.FilterChain;
+005: import jakarta.servlet.ServletException;
+006: import jakarta.servlet.http.HttpServletRequest;
+007: import jakarta.servlet.http.HttpServletResponse;
+008: import lombok.RequiredArgsConstructor;
+009: import lombok.extern.log4j.Log4j2;
+010: import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+011: import org.springframework.security.core.authority.SimpleGrantedAuthority;
+012: import org.springframework.security.core.context.SecurityContext;
+013: import org.springframework.security.core.context.SecurityContextHolder;
+014: import org.springframework.stereotype.Component;
+015: import org.springframework.web.filter.OncePerRequestFilter;
+016: import org.zerock.ex3.member.security.auth.CustomUserPrincipal;
+017: import org.zerock.ex3.member.security.util.JWTUtil;
+018: 
+019: 
+020: import java.io.IOException;
+021: import java.util.Arrays;
+022: import java.util.stream.Collectors;
+023: 
+024: 
+025: @Component
+026: @RequiredArgsConstructor
+027: @Log4j2
+028: public class JWTCheckFilter extends OncePerRequestFilter {
+029: 
+030:   private final JWTUtil jwtUtil;
+031: 
+032: 
+033:   @Override
+034:   protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+035: 
+036: 
+037:     if(request.getServletPath().startsWith("/api/v1/token/")) {
+038:       return true;
+039:     }
+040: 
+041:     //경로 지정 필요
+042:     return false;
+043:   }
+044: 
+045: 
+046:   @Override
+047:   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+048: 
+049:     log.info("JWTCheckFilter doFilter............ ");
+050: 
+051:     log.info("requestURI: " + request.getRequestURI());
+052: 
+053:     String headerStr = request.getHeader("Authorization");
+054: 
+055:     log.info("headerStr: " + headerStr);
+056: 
+057:     //Access Token이 없는 경우
+058:     if (headerStr == null || !headerStr.startsWith("Bearer ")) {
+059:       handleException(response, new Exception("ACCESSS TOKEN NOT FOUND"));
+060:       return;
+061:     }
+062: 
+063:     String accessToken = headerStr.substring(7);
+064: 
+065:     try {
+066:       java.util.Map<String, Object> tokenMap = jwtUtil.validateToken(accessToken);
+067: 
+068:       //토큰 검증 결과에 문제가 없었다
+069:       log.info("tokenMap: " + tokenMap);
+070: 
+071:       String mid = tokenMap.get("mid").toString();
+072: 
+073:       //권한이 여러 개인 경우에는 ,로 구분해서 처리
+074:       String[] roles = tokenMap.get("role").toString().split(",");
+075: 
+076:       //토큰 검증 결과를 이용해서 Authentication 객체를 생성
+077:       UsernamePasswordAuthenticationToken authenticationToken =
+078:               new UsernamePasswordAuthenticationToken(
+079:                       new CustomUserPrincipal(mid),
+080:                       null,
+081:                       Arrays.stream(roles)
+082:                               .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+083:                               .collect(Collectors.toList())
+084:               );
+085: 
+086:       //SecurityContextHolder에 Authentication 객체를 저장
+087:       //이후에 SecurityContextHolder를 이용해서 Authentication 객체를 꺼내서 사용할 수 있다.
+088:       SecurityContext context = SecurityContextHolder.getContext();
+089:       context.setAuthentication(authenticationToken);
+090: 
+091:       filterChain.doFilter(request, response);
+092: 
+093:     } catch (Exception e) {
+094:       //문제가 발생했다면
+095:       handleException(response, e);
+096: 
+097:     }
+098: 
+099: 
+100: 
+101:   }
+102: 
+103: 
+104:   private void handleException(HttpServletResponse response, Exception e) throws IOException {
+105:     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+106:     response.setContentType("application/json");
+107:     response.getWriter().println("{\"error\": \"" + e.getMessage() + "\"}");
+108:   }
+109: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/entity/MemberEntity.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.entity;
+002: 
+003: 
+004: import jakarta.persistence.Entity;
+005: import jakarta.persistence.EntityListeners;
+006: import jakarta.persistence.Id;
+007: import jakarta.persistence.Table;
+008: import lombok.*;
+009: import org.springframework.data.annotation.CreatedDate;
+010: import org.springframework.data.annotation.LastModifiedDate;
+011: import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+012: 
+013: import java.time.LocalDateTime;
+014: 
+015: @Entity
+016: @Table(name = "tbl_members")
+017: @Getter
+018: @ToString
+019: @AllArgsConstructor
+020: @NoArgsConstructor
+021: @Builder
+022: @EntityListeners(value = { AuditingEntityListener.class })
+023: public class MemberEntity {
+024: 
+025:   @Id
+026:   private String mid;
+027: 
+028:   private String mpw;
+029: 
+030:   private String mname;
+031: 
+032:   private String email;
+033: 
+034:   @CreatedDate
+035:   private LocalDateTime joinDate;
+036: 
+037:   @LastModifiedDate
+038:   private LocalDateTime modifiedDate;
+039: 
+040:   //일반 화원, 관리자
+041:   private String role;
+042: 
+043:   public void changePassword(String password) {
+044:     this.mpw = password;
+045:   }
+046: 
+047:   public void changeName(String name) {
+048:     this.mname = name;
+049:   }
+050: 
+051:   public void changeEmail(String email) {
+052:     this.email = email;
+053:   }
+054: 
+055:   public void changeRole(String role) {
+056:     this.role = role;
+057:   }
+058: 
+059: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/controller/advice/TokenControllerAdvice.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.controller.advice;
+002: 
+003: 
+004: import lombok.extern.log4j.Log4j2;
+005: import org.springframework.http.HttpStatus;
+006: import org.springframework.http.ResponseEntity;
+007: import org.springframework.security.access.AccessDeniedException;
+008: import org.springframework.web.bind.annotation.ExceptionHandler;
+009: import org.springframework.web.bind.annotation.RestControllerAdvice;
+010: import org.zerock.ex3.member.exception.MemberTaskException;
+011: 
+012: import java.util.HashMap;
+013: import java.util.Map;
+014: 
+015: @RestControllerAdvice
+016: @Log4j2
+017: public class TokenControllerAdvice {
+018: 
+019:   @ExceptionHandler(MemberTaskException.class)
+020:   public ResponseEntity<Map<String, String>> handleTaskException(MemberTaskException ex) {
+021: 
+022:     log.error(ex.getMessage());
+023: 
+024:     String msg = ex.getMsg();
+025:     int status = ex.getCode();
+026: 
+027:     Map<String, String> map = Map.of("error", msg);
+028: 
+029: 
+030:     return ResponseEntity.status(status).body(map);
+031:   }
+032: 
+033: 
+034:   @ExceptionHandler(AccessDeniedException.class)
+035:   public ResponseEntity<?> handleAccessDeniedException(AccessDeniedException exception) {
+036: 
+037:     log.info("handleAccessDeniedException..................");
+038: 
+039:     Map<String, Object> errors = new HashMap<>();
+040:     errors.put("message", exception.getMessage());
+041: 
+042:     return new ResponseEntity<>(errors, HttpStatus.FORBIDDEN);
+043:   }
+044: 
+045: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/controller/TokenController.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.controller;
+002: 
+003: 
+004: import io.jsonwebtoken.ExpiredJwtException;
+005: import lombok.RequiredArgsConstructor;
+006: import lombok.extern.log4j.Log4j2;
+007: import org.springframework.http.ResponseEntity;
+008: import org.springframework.web.bind.annotation.*;
+009: import org.zerock.ex3.member.dto.MemberDTO;
+010: import org.zerock.ex3.member.security.util.JWTUtil;
+011: import org.zerock.ex3.member.service.MemberService;
+012: 
+013: import java.util.Map;
+014: 
+015: @RestController
+016: @RequestMapping("/api/v1/token")
+017: @Log4j2
+018: @RequiredArgsConstructor
+019: public class TokenController {
+020: 
+021:   private final MemberService memberService;
+022: 
+023:   private final JWTUtil jwtUtil;
+024: 
+025:   @PostMapping("/make")
+026:   public ResponseEntity<Map<String, String>> makeToken(@RequestBody MemberDTO memberDTO ) {
+027: 
+028:     log.info("make token............");
+029: 
+030:     MemberDTO memberDTOResult = memberService.read(memberDTO.getMid(), memberDTO.getMpw());
+031: 
+032:     log.info(memberDTOResult);
+033: 
+034:     String mid = memberDTOResult.getMid();
+035: 
+036:     Map<String, Object> dataMap = memberDTOResult.getDataMap();
+037: 
+038:     String accessToken = jwtUtil.createToken(dataMap, 10);
+039: 
+040:     String refreshToken = jwtUtil.createToken(Map.of("mid", mid), 60 * 24 * 7);
+041: 
+042:     log.info("accessToken: " + accessToken);
+043:     log.info("refreshToken: " + refreshToken);
+044: 
+045: 
+046:     return ResponseEntity.ok(
+047:             Map.of("accessToken", accessToken, "refreshToken", refreshToken)
+048:     );
+049: 
+050:   }
+051: 
+052:   @PostMapping("/refresh")
+053:   public ResponseEntity<Map<String, String>> refreshToken(
+054:           @RequestHeader("Authorization") String accessTokenStr,
+055:           @RequestParam("refreshToken") String refreshToken,
+056:           @RequestParam("mid") String mid
+057:   ){
+058: 
+059:     log.info("access token with Bearer............" + accessTokenStr);
+060: 
+061:     if(accessTokenStr == null || !accessTokenStr.startsWith("Bearer ")) {
+062:       return handleException("No Access Token", 400); //400 Bad Request
+063:     }
+064: 
+065:     if(refreshToken == null) {
+066:       return handleException("No Refresh Token", 400); //400 Bad Request
+067:     }
+068: 
+069:     log.info("refresh token............" + refreshToken);
+070: 
+071:     if(mid == null) {
+072:       return handleException("No Mid", 400); //400 Bad Request
+073:     }
+074: 
+075:     //Access Token이 만료되었는지 확인
+076:     String accessToken = accessTokenStr.substring(7);
+077: 
+078:     try{
+079:       jwtUtil.validateToken(accessToken);
+080: 
+081:       //아직 만료 기한이 남아 있는 상황
+082:       Map<String, String> data = makeData(mid, accessToken, refreshToken);
+083: 
+084:       log.info("Access Token is not expired..................");
+085: 
+086: 
+087:       return ResponseEntity.ok(data);
+088: 
+089:     }catch(ExpiredJwtException expiredJwtException) {
+090: 
+091:       try {
+092:         //Refresh가 필요한 상황
+093:         Map<String, String> newTokenMap = makeNewToken(mid, refreshToken);
+094:         return ResponseEntity.ok(newTokenMap);
+095: 
+096:       }catch(Exception e) {
+097:         return handleException("REFRESH "+e.getMessage(), 400); //400 Bad Request
+098:       }
+099: 
+100:     }catch(Exception e) {
+101:       e.printStackTrace(); //디버깅용
+102:       return handleException(e.getMessage(), 400); //400 Bad Request
+103:     }
+104:   }
+105: 
+106: 
+107:   private Map<String, String> makeData(String mid, String accesssToken, String refreshToken){
+108: 
+109:     return Map.of("mid", mid, "accessToken", accesssToken, "refreshToken", refreshToken);
+110:   }
+111: 
+112:   private ResponseEntity<Map<String, String>> handleException(String msg, int status) {
+113: 
+114:     return ResponseEntity.status(status).body(Map.of("error", msg));
+115:   }
+116: 
+117: 
+118:   private Map<String, String> makeNewToken(String mid, String refreshToken) {
+119: 
+120:     Map<String, Object> claims = jwtUtil.validateToken(refreshToken);
+121: 
+122:     log.info("refresh token claims: " + claims);
+123: 
+124:     if (!mid.equals(claims.get("mid").toString())) {
+125:       throw new RuntimeException("Invalid Refresh Token Host");
+126:     }
+127: 
+128:     // mid를 이용해서 사용자 정보를 다시 확인한 후에 새로운 토큰 생성
+129:     MemberDTO memberDTO = memberService.getByMid(mid);
+130: 
+131:     Map<String, Object> newClaims = memberDTO.getDataMap();
+132: 
+133:     String newAccessToken = jwtUtil.createToken(newClaims, 10);
+134: 
+135:     String newRefreshToken = jwtUtil.createToken(Map.of("mid", mid), 60 * 24 * 7);
+136: 
+137:     return makeData(mid, newAccessToken, newRefreshToken);
+138: 
+139:   }
+140: 
+141: 
+142: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/service/MemberService.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.service;
+002: 
+003: import lombok.RequiredArgsConstructor;
+004: import lombok.extern.log4j.Log4j2;
+005: import org.springframework.security.crypto.password.PasswordEncoder;
+006: import org.springframework.stereotype.Service;
+007: import org.springframework.transaction.annotation.Transactional;
+008: import org.zerock.ex3.member.dto.MemberDTO;
+009: import org.zerock.ex3.member.entity.MemberEntity;
+010: import org.zerock.ex3.member.exception.MemberExceptions;
+011: import org.zerock.ex3.member.repository.MemberRepository;
+012: 
+013: 
+014: import java.util.Optional;
+015: 
+016: @Service
+017: @RequiredArgsConstructor
+018: @Log4j2
+019: @Transactional
+020: public class MemberService {
+021: 
+022:   private final MemberRepository memberRepository;
+023: 
+024:   private final PasswordEncoder passwordEncoder;
+025: 
+026:   public MemberDTO read(String mid, String mpw) {
+027: 
+028:     Optional<MemberEntity> result = memberRepository.findById(mid);
+029: 
+030:     MemberEntity memberEntity = result.orElseThrow(MemberExceptions.BAD_CREDENTIALS::get);
+031: 
+032:     if (!passwordEncoder.matches(mpw, memberEntity.getMpw())) {
+033:       throw MemberExceptions.BAD_CREDENTIALS.get();
+034:     }
+035: 
+036:     return new MemberDTO(memberEntity);
+037: 
+038:   }
+039: 
+040:   public MemberDTO getByMid(String mid) {
+041: 
+042:     Optional<MemberEntity> result = memberRepository.findById(mid);
+043: 
+044:     MemberEntity memberEntity = result.orElseThrow(MemberExceptions.NOT_FOUND::get);
+045: 
+046:     return new MemberDTO(memberEntity);
+047: 
+048:   }
+049: 
+050: 
+051: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/exception/MemberExceptions.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.exception;
+002: 
+003: public enum MemberExceptions {
+004: 
+005:   NOT_FOUND("NOT_FOUND", 404),
+006:   DUPLICATE("DUPLICATE", 409),
+007:   INVALID("INVALID", 400),
+008: 
+009:   BAD_CREDENTIALS("BAD_CREDENTIALS", 401);
+010: 
+011: 
+012:   private MemberTaskException memberTaskException;
+013: 
+014:   MemberExceptions(String msg, int code) {
+015:     memberTaskException = new MemberTaskException(msg, code);
+016:   }
+017: 
+018:   public MemberTaskException get() {
+019:     return memberTaskException;
+020:   }
+021: 
+022: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/member/exception/MemberTaskException.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.member.exception;
+002: 
+003: 
+004: import lombok.Data;
+005: import lombok.Getter;
+006: 
+007: @Getter
+008: public class MemberTaskException extends RuntimeException{
+009: 
+010:   private String msg;
+011:   private int code;
+012: 
+013:   public MemberTaskException(String msg, int code) {
+014:     this.msg = msg;
+015:     this.code = code;
+016:   }
+017: 
+018: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/sample/controller/SampleController.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3.sample.controller;
+002: 
+003: 
+004: import lombok.extern.log4j.Log4j2;
+005: import org.springframework.http.ResponseEntity;
+006: import org.springframework.security.access.prepost.PreAuthorize;
+007: import org.springframework.web.bind.annotation.GetMapping;
+008: import org.springframework.web.bind.annotation.RequestMapping;
+009: import org.springframework.web.bind.annotation.RestController;
+010: 
+011: @RestController
+012: @Log4j2
+013: @RequestMapping("/api/v1/samples")
+014: public class SampleController {
+015: 
+016: 
+017:   @PreAuthorize("hasRole('ROLE_USER')")
+018:   @GetMapping("/list")
+019:   public ResponseEntity<?> list() {
+020: 
+021:     log.info("list............");
+022: 
+023:     String[] arr = {"AAA", "BBB", "CCC"};
+024: 
+025:     return ResponseEntity.ok(arr);
+026: 
+027:   }
+028: 
+029: }
+  </xmp></div></div>
+<div class='file'>
+  <div class='title'>/main/java/org/zerock/ex3/Ex3Application.java</div>
+  <div class='main'><xmp>
+001: package org.zerock.ex3;
+002: 
+003: import org.springframework.boot.SpringApplication;
+004: import org.springframework.boot.autoconfigure.SpringBootApplication;
+005: import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+006: 
+007: @SpringBootApplication
+008: @EnableJpaAuditing
+009: public class Ex3Application {
+010: 
+011:   public static void main(String[] args) {
+012:     SpringApplication.run(Ex3Application.class, args);
+013:   }
+014: 
+015: }
+  </xmp></div></div>
+<script>
+
+</script>
+
+<script>
+
+    const arr = document.querySelectorAll(".file")
+    const mainArr = document.querySelectorAll(".main")
+    let before = null
+
+    for (const arrElement of arr) {
+
+        arrElement.addEventListener("click", e => {
+
+            const target = arrElement.closest(".file").querySelector(".main")
+            console.log(before)
+
+            if(target.classList.contains('show')) {
+                target.classList.remove("show")
+                return
+            }
+
+            if(before) {
+                before.classList.remove("show")
+            }
+            target.classList.add("show")
+            before = target
+
+        }, false)
+
+    }
+
+
+</script>
+
+</body></html>
